@@ -1,6 +1,7 @@
 # Railway 构建与启动配置（避免自动检测失败）
 [build]
-buildCommand = "npm install && npm run build"
+# 直接用 node 跑 vite，避免容器内 vite 无执行权限
+buildCommand = "npm install && cd frontend && node ./node_modules/vite/bin/vite.js build"
 
 [deploy]
 startCommand = "npm start"
