@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Frontend build (built on Railway during deploy)
+frontend/dist/
+
+# Local SQLite DB (optional: keep untracked so each env has its own; Railway uses Volume)
+# backend/data/*.db
+
+# Env and secrets
+.env
+.env.local
+.env.*.local
+
+# Logs and OS
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

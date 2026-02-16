@@ -15,12 +15,20 @@ import { adminRouter } from './routes/admin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Railway 会注入 PORT，必须使用且需监听 0.0.0.0
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors({ origin: true }));
 app.use(express.json());
 
+// 尽早注册健康检查，便于平台探测
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true });
+});
+
 async function start() {
+  console.log('[start] PORT=%s (from env: %s)', PORT, process.env.PORT || '(none)');
+
   await initDb();
   const db = getDb();
   app.set('db', db);
@@ -50,25 +58,32 @@ async function start() {
     }
   });
 
-  app.get('/api/health', (req, res) => {
-    res.json({ ok: true });
-  });
-
   // 生产模式：托管前端构建产物，SPA history 模式回退（放在 API 之后，避免拦截 /api/*）
   const distDir = path.join(__dirname, '..', 'frontend', 'dist');
-  if (fs.existsSync(distDir)) {
+  const indexHtml = path.join(distDir, 'index.html');
+  const distExists = fs.existsSync(distDir);
+  const indexExists = fs.existsSync(indexHtml);
+  console.log('[start] frontend dist: %s (exists: %s, index.html: %s)', distDir, distExists, indexExists);
+
+  if (distExists) {
     app.use(express.static(distDir));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distDir, 'index.html'));
+      res.sendFile(indexHtml, (err) => {
+        if (err) res.status(500).send('Frontend index not found');
+      });
+    });
+  } else {
+    app.get('/', (req, res) => {
+      res.send('<p>Frontend not built. Check deployment logs.</p><p><a href="/api/health">/api/health</a></p>');
     });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`API running at http://localhost:${PORT}`);
+    console.log('Listening on 0.0.0.0:%s', PORT);
   });
 }
 
 start().catch((e) => {
-  console.error(e);
+  console.error('Start failed:', e);
   process.exit(1);
 });
