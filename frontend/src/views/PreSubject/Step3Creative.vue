@@ -48,7 +48,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import BaseTextArea from '../../components/BaseTextArea.vue';
 import BasePrimaryButton from '../../components/BasePrimaryButton.vue';
 import BaseModal from '../../components/BaseModal.vue';
@@ -59,12 +59,15 @@ import { briefQuestion1 } from '../../content/preExperiment.js';
 const props = defineProps({
   subjectId: String,
   name: String,
+  visitorId: String,
+  initialCreativeForm: { type: Object, default: () => ({}) },
 });
-const emit = defineEmits(['next']);
+const emit = defineEmits(['next', 'saveProgress']);
 
 const TOTAL_SEC = 10 * 60;
 const remaining = ref(TOTAL_SEC);
 let timer = null;
+let saveProgressTimer = null;
 
 const timeText = computed(() => {
   const r = remaining.value;
@@ -73,13 +76,14 @@ const timeText = computed(() => {
   return `剩余${m}分${s}秒`;
 });
 
-const form = ref({
+const defaultForm = () => ({
   target_audience: '',
   pain_point: '',
   insight: '',
   big_idea: '',
   rationale: '',
 });
+const form = ref({ ...defaultForm() });
 
 const modules = [
   {
@@ -163,9 +167,11 @@ function submitPlan(isAutoSaved) {
     rationale: form.value.rationale,
     is_auto_saved: isAutoSaved ? 1 : 0,
   };
+  const h = { 'Content-Type': 'application/json' };
+  if (props.visitorId) h['X-Visitor-Id'] = props.visitorId;
   fetch('/api/pre-subject/submit', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: h,
     body: JSON.stringify(payload),
   })
     .then((r) => r.json())
@@ -192,6 +198,10 @@ function onConfirmAutoSaved() {
 }
 
 onMounted(() => {
+  const init = props.initialCreativeForm;
+  if (init && typeof init === 'object') {
+    form.value = { ...defaultForm(), ...init };
+  }
   remaining.value = TOTAL_SEC;
   timer = setInterval(() => {
     remaining.value--;
@@ -201,8 +211,21 @@ onMounted(() => {
     }
   }, 1000);
 });
+
+watch(
+  () => ({ ...form.value }),
+  () => {
+    if (saveProgressTimer) clearTimeout(saveProgressTimer);
+    saveProgressTimer = setTimeout(() => {
+      emit('saveProgress', { ...form.value });
+    }, 800);
+  },
+  { deep: true }
+);
+
 onUnmounted(() => {
   if (timer) clearInterval(timer);
+  if (saveProgressTimer) clearTimeout(saveProgressTimer);
 });
 </script>
 

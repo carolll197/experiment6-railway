@@ -61,7 +61,7 @@
                   <td class="cell-body">{{ r.insight }}</td>
                   <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
                   <td class="cell-body">{{ r.rationale }}</td>
-                  <td>{{ r.submitted_at || '—' }}</td>
+                  <td>{{ formatBeijingTime(r.submitted_at) }}</td>
                   <td>{{ r.is_auto_saved ? '是' : '否' }}</td>
                   <td :class="{ 'text-score invalid-cell': r.expert_marked_invalid }">{{ r.expert_marked_invalid ? '是' : '否' }}</td>
                   <td :class="{ 'text-score invalid-cell': r.expert_marked_invalid }">{{ r.plan_status }}</td>
@@ -98,7 +98,7 @@
                   <td>{{ r.question_no }}</td>
                   <td :class="{ 'text-score invalid': r.is_invalid }">{{ r.score }}</td>
                   <td :class="{ 'text-score invalid': r.is_invalid }">{{ r.is_invalid ? '是' : '否' }}</td>
-                  <td>{{ r.scored_at || '—' }}</td>
+                  <td>{{ formatBeijingTime(r.scored_at) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -116,6 +116,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { formatBeijingTime } from '../../utils/formatBeijingTime.js';
 
 const filters = ref({
   experimentType: 'pre',

@@ -80,7 +80,7 @@
                   <td class="cell-body">{{ r.insight }}</td>
                   <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
                   <td class="cell-body">{{ r.rationale }}</td>
-                  <td>{{ r.submitted_at || '—' }}</td>
+                  <td>{{ formatBeijingTime(r.submitted_at) }}</td>
                   <td>{{ r.is_auto_saved ? '是' : '否' }}</td>
                   <td>{{ getChoice(r.subject_id) }}</td>
                 </tr>
@@ -175,6 +175,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { formatBeijingTime } from '../../utils/formatBeijingTime.js';
 
 const filters = ref({
   experimentType: 'study1',

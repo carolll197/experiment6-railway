@@ -84,15 +84,16 @@
       <template v-else>
         <h2 class="text-h2" style="margin: 10px 0;">您最终选择提交的作品是</h2>
         <div class="radio-row">
-          <label class="radio-label" :style="{ order: leftFirst ? 1 : 2 }">
-            <span class="custom-radio" :class="{ checked: chosenSide === 'yours' }"></span>
-            <input type="radio" class="sr-only" :name="radioName" value="yours" v-model="chosenSide" />
-            <span>{{ leftFirst ? '您的作品' : 'AI作品' }}</span>
+          <!-- 左侧选项：展示与 value 一致，避免 leftFirst 随机时点选与提交相反 -->
+          <label class="radio-label" :style="{ order: 1 }">
+            <span class="custom-radio" :class="{ checked: chosenSide === leftOptionValue }"></span>
+            <input type="radio" class="sr-only" :name="radioName" :value="leftOptionValue" v-model="chosenSide" />
+            <span>{{ leftLabel }}</span>
           </label>
-          <label class="radio-label" :style="{ order: leftFirst ? 2 : 1 }">
-            <span class="custom-radio" :class="{ checked: chosenSide === 'ai' }"></span>
-            <input type="radio" class="sr-only" :name="radioName" value="ai" v-model="chosenSide" />
-            <span>{{ leftFirst ? 'AI作品' : '您的作品' }}</span>
+          <label class="radio-label" :style="{ order: 2 }">
+            <span class="custom-radio" :class="{ checked: chosenSide === rightOptionValue }"></span>
+            <input type="radio" class="sr-only" :name="radioName" :value="rightOptionValue" v-model="chosenSide" />
+            <span>{{ rightLabel }}</span>
           </label>
         </div>
         <div class="btn-row">
@@ -121,6 +122,9 @@ const emit = defineEmits(['next']);
 const leftFirst = ref(false);
 const leftLabel = computed(() => (leftFirst.value ? '您的作品' : 'AI作品'));
 const rightLabel = computed(() => (leftFirst.value ? 'AI作品' : '您的作品'));
+// 单选框 value 必须与左右展示一致，否则 leftFirst 随机时会出现“选 AI 却提交成您的作品”
+const leftOptionValue = computed(() => (leftFirst.value ? 'yours' : 'ai'));
+const rightOptionValue = computed(() => (leftFirst.value ? 'ai' : 'yours'));
 // 下方评分栏：第一列对应左侧作品、第二列对应右侧作品，与上方展示顺序一致
 
 const leftWork = computed(() => (leftFirst.value ? props.phase1Plan : study1AiWork));

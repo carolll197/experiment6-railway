@@ -6,6 +6,68 @@ function nowStr() {
   return new Date().toISOString().slice(0, 19).replace('T', ' ');
 }
 
+function getClientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return req.socket?.remoteAddress || req.ip || '';
+}
+
+// 获取研究一进度
+study1SubjectRouter.get('/progress', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const visitorId = req.headers['x-visitor-id'] || req.query.visitor_id || '';
+    if (!visitorId.trim()) return res.json({ submitted: false, step: 0 });
+    const row = db.prepare(
+      'SELECT step, data_json, subject_id, name, submitted_at FROM visitor_progress WHERE visitor_id = ? AND flow = ?'
+    ).get(visitorId.trim(), 'study1-subject');
+    if (!row) return res.json({ submitted: false, step: 0 });
+    if (row.submitted_at) return res.json({ submitted: true });
+    let data = {};
+    try {
+      if (row.data_json) data = JSON.parse(row.data_json);
+    } catch (_) {}
+    res.json({
+      submitted: false,
+      step: row.step ?? 0,
+      subjectId: row.subject_id ?? '',
+      name: row.name ?? '',
+      data: data,
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 保存研究一进度（step 为 9 时视为已完成，设置 submitted_at）
+study1SubjectRouter.post('/progress', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const visitorId = (req.headers['x-visitor-id'] || req.body?.visitor_id || '').trim();
+    if (!visitorId) return res.status(400).json({ error: '缺少 visitor_id' });
+    const ip = getClientIp(req);
+    const { step, subject_id, name, data: progressData, submitted } = req.body;
+    const dataJson = JSON.stringify(progressData || {});
+    const updatedAt = nowStr();
+    const isDone = step === 9 || submitted === true;
+    const submittedAt = isDone ? updatedAt : null;
+    db.run(
+      `INSERT INTO visitor_progress (visitor_id, flow, ip, step, data_json, subject_id, name, submitted_at, updated_at)
+       VALUES (?, 'study1-subject', ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(visitor_id, flow) DO UPDATE SET
+         ip = excluded.ip, step = excluded.step, data_json = excluded.data_json,
+         subject_id = excluded.subject_id, name = excluded.name,
+         submitted_at = COALESCE(excluded.submitted_at, submitted_at), updated_at = excluded.updated_at`,
+      [visitorId, ip, step ?? 0, dataJson, subject_id ?? '', name ?? '', submittedAt, updatedAt]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 被试进入实验时登记编号与姓名（主试端 CSE/环节一 显示姓名用）
 study1SubjectRouter.post('/register', (req, res) => {
   try {

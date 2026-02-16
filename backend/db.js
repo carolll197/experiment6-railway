@@ -124,6 +124,18 @@ function runSchema() {
     scores_json TEXT,
     created_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS visitor_progress (
+    visitor_id TEXT NOT NULL,
+    flow TEXT NOT NULL,
+    ip TEXT,
+    step INTEGER DEFAULT 0,
+    data_json TEXT,
+    subject_id TEXT,
+    name TEXT,
+    submitted_at TEXT,
+    updated_at TEXT,
+    PRIMARY KEY (visitor_id, flow)
+  );
   `;
   rawDb.exec(schema);
   // 回填 study1_subjects：从已有方案表取每个被试的姓名（任选一条）
