@@ -10,9 +10,10 @@ adminRouter.get('/pre/plans', (req, res) => {
     const { keyword } = req.query;
     let sql = `SELECT * FROM pre_subject_plans WHERE 1=1`;
     const params = [];
-    if (keyword) {
+    if (keyword && String(keyword).trim()) {
+      const k = `%${String(keyword).trim()}%`;
       sql += ` AND (subject_id LIKE ? OR name LIKE ?)`;
-      params.push(`%${keyword}%`, `%${keyword}%`);
+      params.push(k, k);
     }
     sql += ` ORDER BY id`;
     const rows = db.prepare(sql).all(...params);
@@ -23,37 +24,44 @@ adminRouter.get('/pre/plans', (req, res) => {
   }
 });
 
-// 预实验 - 专家评分列表（支持筛选）
-// dataStatus=invalid 时：返回“被任一专家标记为无效”的被试的全部专家评分，便于看到谁标了无效、谁打了分
+// 预实验 - 专家评分列表（支持 keyword / dataStatus / expertName；带被试姓名 subject_name）
 adminRouter.get('/pre/scores', (req, res) => {
   try {
     const db = req.app.get('db');
-    const { keyword, dataStatus } = req.query;
+    const { keyword, dataStatus, expertName } = req.query;
     if (dataStatus === 'invalid') {
       const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
       const subjectIds = invalidRows.map((r) => String(r.subject_id ?? '')).filter(Boolean);
-      if (subjectIds.length === 0) {
-        return res.json([]);
-      }
+      if (subjectIds.length === 0) return res.json([]);
       const placeholders = subjectIds.map(() => '?').join(',');
-      let sql = `SELECT * FROM pre_expert_scores WHERE subject_id IN (${placeholders})`;
+      let sql = `SELECT s.*, (SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1) AS subject_name FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
       const params = [...subjectIds];
-      if (keyword) {
-        sql += ` AND (subject_id LIKE ? OR expert_name LIKE ?)`;
-        params.push(`%${keyword}%`, `%${keyword}%`);
+      if (keyword && String(keyword).trim()) {
+        const k = `%${String(keyword).trim()}%`;
+        sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`;
+        params.push(k, k);
       }
-      sql += ` ORDER BY subject_id, expert_name, question_no`;
+      if (expertName && String(expertName).trim()) {
+        sql += ` AND s.expert_name LIKE ?`;
+        params.push(`%${String(expertName).trim()}%`);
+      }
+      sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
       const rows = db.prepare(sql).all(...params);
       return res.json(rows);
     }
-    let sql = `SELECT * FROM pre_expert_scores WHERE 1=1`;
+    let sql = `SELECT s.*, (SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1) AS subject_name FROM pre_expert_scores s WHERE 1=1`;
     const params = [];
-    if (keyword) {
-      sql += ` AND (subject_id LIKE ? OR expert_name LIKE ?)`;
-      params.push(`%${keyword}%`, `%${keyword}%`);
+    if (keyword && String(keyword).trim()) {
+      const k = `%${String(keyword).trim()}%`;
+      sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`;
+      params.push(k, k);
     }
-    if (dataStatus === 'valid') sql += ` AND is_invalid = 0`;
-    sql += ` ORDER BY subject_id, expert_name, question_no`;
+    if (expertName && String(expertName).trim()) {
+      sql += ` AND s.expert_name LIKE ?`;
+      params.push(`%${String(expertName).trim()}%`);
+    }
+    if (dataStatus === 'valid') sql += ` AND s.is_invalid = 0`;
+    sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
     const rows = db.prepare(sql).all(...params);
     res.json(rows);
   } catch (e) {
@@ -138,18 +146,21 @@ adminRouter.get('/study1/phase1-choices', (req, res) => {
   }
 });
 
-// 研究一 - CSE 量表得分（单独存储与查看，仅查 study1_cse_scores 避免子查询导致异常）
+// 研究一 - CSE 量表得分（带被试姓名 name）
 adminRouter.get('/study1/cse', (req, res) => {
   try {
     const db = req.app.get('db');
     const { keyword } = req.query;
-    let sql = `SELECT id, subject_id, q1, q2, q3, q4, created_at FROM study1_cse_scores WHERE 1=1`;
+    let sql = `SELECT c.id, c.subject_id, c.q1, c.q2, c.q3, c.q4, c.created_at,
+      COALESCE((SELECT name FROM study1_subjects s WHERE s.subject_id = c.subject_id LIMIT 1),
+               (SELECT name FROM study1_subject_plans p WHERE p.subject_id = c.subject_id LIMIT 1)) AS name
+      FROM study1_cse_scores c WHERE 1=1`;
     const params = [];
     if (keyword && String(keyword).trim()) {
-      sql += ` AND subject_id LIKE ?`;
+      sql += ` AND c.subject_id LIKE ?`;
       params.push(`%${String(keyword).trim()}%`);
     }
-    sql += ` ORDER BY id`;
+    sql += ` ORDER BY c.id`;
     const rows = db.prepare(sql).all(...params);
     res.json(Array.isArray(rows) ? rows : []);
   } catch (e) {
@@ -158,14 +169,23 @@ adminRouter.get('/study1/cse', (req, res) => {
   }
 });
 
-// 导出研究一 CSE 量表数据 Excel
+// 导出研究一 CSE 量表数据 Excel（与筛选同步：keyword；含被试姓名）
 adminRouter.get('/export/study1-cse', (req, res) => {
   try {
     const db = req.app.get('db');
-    const rows = db.prepare(`SELECT id, subject_id, q1, q2, q3, q4, created_at FROM study1_cse_scores ORDER BY id`).all();
+    const { keyword } = req.query;
+    let sql = `SELECT c.id, c.subject_id, c.q1, c.q2, c.q3, c.q4, c.created_at,
+      COALESCE((SELECT name FROM study1_subjects s WHERE s.subject_id = c.subject_id LIMIT 1),
+               (SELECT name FROM study1_subject_plans p WHERE p.subject_id = c.subject_id LIMIT 1)) AS name
+      FROM study1_cse_scores c WHERE 1=1`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { sql += ` AND c.subject_id LIKE ?`; params.push(`%${String(keyword).trim()}%`); }
+    sql += ` ORDER BY c.id`;
+    const rows = db.prepare(sql).all(...params);
     const ws = XLSX.utils.json_to_sheet(
       rows.map((r) => ({
         被试编号: r.subject_id,
+        被试姓名: r.name ?? '',
         题1: r.q1 != null ? r.q1 : '',
         题2: r.q2 != null ? r.q2 : '',
         题3: r.q3 != null ? r.q3 : '',
@@ -185,15 +205,30 @@ adminRouter.get('/export/study1-cse', (req, res) => {
   }
 });
 
-// 导出预实验被试方案 Excel
+// 导出预实验被试方案 Excel（与筛选同步：keyword、dataStatus）
 adminRouter.get('/export/pre-plans', (req, res) => {
   try {
     const db = req.app.get('db');
-    const rows = db.prepare(`SELECT * FROM pre_subject_plans ORDER BY id`).all();
+    const { keyword, dataStatus } = req.query;
+    let sql = `SELECT * FROM pre_subject_plans WHERE 1=1`;
+    const params = [];
+    if (keyword && String(keyword).trim()) {
+      const k = `%${String(keyword).trim()}%`;
+      sql += ` AND (subject_id LIKE ? OR name LIKE ?)`;
+      params.push(k, k);
+    }
+    sql += ` ORDER BY id`;
+    let rows = db.prepare(sql).all(...params);
+    if (dataStatus === 'valid' || dataStatus === 'invalid') {
+      const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
+      const invalidIds = new Set(invalidRows.map((r) => String(r.subject_id ?? '')));
+      if (dataStatus === 'invalid') rows = rows.filter((r) => invalidIds.has(String(r.subject_id ?? '')));
+      else rows = rows.filter((r) => !invalidIds.has(String(r.subject_id ?? '')));
+    }
     const ws = XLSX.utils.json_to_sheet(
       rows.map((r) => ({
         被试编号: r.subject_id,
-        姓名: r.name,
+        被试姓名: r.name,
         目标受众画像: r.target_audience,
         痛点挖掘: r.pain_point,
         核心洞察: r.insight,
@@ -215,14 +250,38 @@ adminRouter.get('/export/pre-plans', (req, res) => {
   }
 });
 
-// 导出预实验专家评分 Excel（按被试+专家聚合）
+// 导出预实验专家评分 Excel（与筛选同步：keyword、dataStatus、expertName；含被试姓名）
+function preScoresRows(db, query) {
+  const { keyword, dataStatus, expertName } = query;
+  if (dataStatus === 'invalid') {
+    const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
+    const subjectIds = invalidRows.map((r) => String(r.subject_id ?? '')).filter(Boolean);
+    if (subjectIds.length === 0) return [];
+    const placeholders = subjectIds.map(() => '?').join(',');
+    let sql = `SELECT s.*, (SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1) AS subject_name FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
+    const params = [...subjectIds];
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`; params.push(k, k); }
+    if (expertName && String(expertName).trim()) { sql += ` AND s.expert_name LIKE ?`; params.push(`%${String(expertName).trim()}%`); }
+    sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
+    return db.prepare(sql).all(...params);
+  }
+  let sql = `SELECT s.*, (SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1) AS subject_name FROM pre_expert_scores s WHERE 1=1`;
+  const params = [];
+  if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`; params.push(k, k); }
+  if (expertName && String(expertName).trim()) { sql += ` AND s.expert_name LIKE ?`; params.push(`%${String(expertName).trim()}%`); }
+  if (dataStatus === 'valid') sql += ` AND s.is_invalid = 0`;
+  sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
+  return db.prepare(sql).all(...params);
+}
+
 adminRouter.get('/export/pre-scores', (req, res) => {
   try {
     const db = req.app.get('db');
-    const rows = db.prepare(`SELECT * FROM pre_expert_scores ORDER BY subject_id, expert_name, question_no`).all();
+    const rows = preScoresRows(db, req.query);
     const ws = XLSX.utils.json_to_sheet(
       rows.map((r) => ({
         被试编号: r.subject_id,
+        被试姓名: r.subject_name ?? '',
         专家姓名: r.expert_name,
         题号: r.question_no,
         分数: r.score,
@@ -242,11 +301,17 @@ adminRouter.get('/export/pre-scores', (req, res) => {
   }
 });
 
-// 导出研究一被试方案 Excel
+// 导出研究一被试方案 Excel（与筛选同步：keyword、phase）
 adminRouter.get('/export/study1-plans', (req, res) => {
   try {
     const db = req.app.get('db');
-    const plans = db.prepare(`SELECT * FROM study1_subject_plans ORDER BY id`).all();
+    const { keyword, phase } = req.query;
+    let sql = `SELECT * FROM study1_subject_plans WHERE 1=1`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ?)`; params.push(k, k); }
+    if (phase && String(phase).trim()) { sql += ` AND phase = ?`; params.push(String(phase).trim()); }
+    sql += ` ORDER BY id`;
+    const plans = db.prepare(sql).all(...params);
     const choices = db.prepare(`SELECT * FROM study1_phase1_choice ORDER BY subject_id`).all();
     const choiceMap = Object.fromEntries(choices.map((c) => [c.subject_id, c]));
     const cseRows = db.prepare(`SELECT * FROM study1_cse_scores ORDER BY subject_id`).all();
@@ -299,11 +364,19 @@ adminRouter.get('/export/study1-plans', (req, res) => {
   }
 });
 
-// 导出研究一环节一打分（13题 × 您的作品/AI作品）
+// 导出研究一环节一打分（与筛选同步：keyword；含被试姓名）
 adminRouter.get('/export/study1-phase1-scores', (req, res) => {
   try {
     const db = req.app.get('db');
-    const rows = db.prepare(`SELECT * FROM study1_phase1_choice ORDER BY id`).all();
+    const { keyword } = req.query;
+    let sql = `SELECT c.*,
+      COALESCE((SELECT s.name FROM study1_subjects s WHERE s.subject_id = c.subject_id LIMIT 1),
+               (SELECT p.name FROM study1_subject_plans p WHERE p.subject_id = c.subject_id LIMIT 1)) AS name
+      FROM study1_phase1_choice c WHERE 1=1`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { sql += ` AND c.subject_id LIKE ?`; params.push(`%${String(keyword).trim()}%`); }
+    sql += ` ORDER BY c.id`;
+    const rows = db.prepare(sql).all(...params);
     const out = rows.map((r) => {
       let scores = [];
       if (r.scores_json) {
@@ -319,6 +392,7 @@ adminRouter.get('/export/study1-phase1-scores', (req, res) => {
       }
       const row = {
         被试编号: r.subject_id,
+        被试姓名: r.name ?? '',
         最终提交作品: r.chosen || '',
       };
       for (let n = 1; n <= 13; n++) {

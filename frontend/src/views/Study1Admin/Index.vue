@@ -3,10 +3,9 @@
     <header class="top-bar panel-border">
       <h1 class="text-h1 left">广告创意研究实验数据管理平台（研究一）</h1>
       <div class="top-actions">
-        <a :href="exportUrls.plans" class="btn-primary" download>导出被试的方案</a>
-        <a v-if="filters.dataType === 'cse'" :href="exportUrls.cse" class="btn-primary" download>导出CSE量表数据</a>
-        <a v-if="filters.dataType === 'phase1-choices'" :href="exportUrls.phase1Scores" class="btn-primary" download>导出环节一打分</a>
-        <span class="btn-primary disabled-btn">导出专家每道题目的评分</span>
+        <a v-if="filters.dataType === 'plans'" :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
+        <a v-else-if="filters.dataType === 'cse'" :href="exportCseUrlWithFilter" class="btn-primary" download>导出CSE量表数据</a>
+        <a v-else-if="filters.dataType === 'phase1-choices'" :href="exportPhase1ScoresUrlWithFilter" class="btn-primary" download>导出环节一打分</a>
       </div>
     </header>
     <div class="main-grid">
@@ -72,7 +71,7 @@
               <tbody>
                 <tr v-for="r in paginatedPlans" :key="r.id">
                   <td>{{ r.subject_id }}</td>
-                  <td>{{ r.name }}</td>
+                  <td class="cell-name">{{ r.name || '—' }}</td>
                   <td>{{ r.phase }}</td>
                   <td>{{ r.question_no }}</td>
                   <td class="cell-body">{{ r.target_audience }}</td>
@@ -100,10 +99,11 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th colspan="5" class="text-table-head">研究一/CSE量表数据</th>
+                  <th colspan="6" class="text-table-head">研究一/CSE量表数据</th>
                 </tr>
                 <tr>
                   <th class="text-table-head th-sort" @click="toggleSortCse('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                  <th class="text-table-head">被试姓名</th>
                   <th class="text-table-head">题1</th>
                   <th class="text-table-head">题2</th>
                   <th class="text-table-head">题3</th>
@@ -113,6 +113,7 @@
               <tbody>
                 <tr v-for="(r, idx) in paginatedCse" :key="r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx">
                   <td>{{ r.subject_id }}</td>
+                  <td class="cell-name">{{ r.name || '—' }}</td>
                   <td class="text-score">{{ r.q1 != null ? r.q1 : '—' }}</td>
                   <td class="text-score">{{ r.q2 != null ? r.q2 : '—' }}</td>
                   <td class="text-score">{{ r.q3 != null ? r.q3 : '—' }}</td>
@@ -134,14 +135,16 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th :colspan="2 + 13 * 2" class="text-table-head">研究一/环节一选择与打分（创造力评价13题）</th>
+                  <th :colspan="3 + 13 * 2" class="text-table-head">研究一/环节一选择与打分（创造力评价13题）</th>
                 </tr>
                 <tr>
                   <th class="text-table-head th-sort" @click="toggleSortChoice('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                  <th class="text-table-head">被试姓名</th>
                   <th class="text-table-head">最终提交作品</th>
                   <th v-for="n in 13" :key="n" colspan="2" class="text-table-head">题{{ n }}</th>
                 </tr>
                 <tr>
+                  <th class="text-table-head"></th>
                   <th class="text-table-head"></th>
                   <th class="text-table-head"></th>
                   <template v-for="n in 13" :key="n">
@@ -153,6 +156,7 @@
               <tbody>
                 <tr v-for="r in paginatedChoices" :key="r.subject_id">
                   <td>{{ r.subject_id }}</td>
+                  <td class="cell-name">{{ r.name || '—' }}</td>
                   <td>{{ r.chosen || '—' }}</td>
                   <template v-for="n in 13" :key="n">
                     <td class="text-score">{{ getScoreByQuestion(r, n).yours }}</td>
@@ -194,7 +198,7 @@ const pageSize = 20;
 
 const planColumns = [
   { key: 'subject_id', label: '被试编号' },
-  { key: 'name', label: '姓名' },
+  { key: 'name', label: '被试姓名' },
   { key: 'phase', label: '创作环节' },
   { key: 'question_no', label: '题号' },
   { key: 'target_audience', label: '目标受众画像' },
@@ -207,11 +211,22 @@ const planColumns = [
   { key: 'chosen', label: '环节一最终提交作品' },
 ];
 
-const exportUrls = {
-  plans: '/api/admin/export/study1-plans',
-  cse: '/api/admin/export/study1-cse',
-  phase1Scores: '/api/admin/export/study1-phase1-scores',
-};
+const exportPlansUrlWithFilter = computed(() => {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  if (filters.value.phase) q.set('phase', filters.value.phase);
+  return `/api/admin/export/study1-plans?${q.toString()}`;
+});
+const exportCseUrlWithFilter = computed(() => {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  return `/api/admin/export/study1-cse?${q.toString()}`;
+});
+const exportPhase1ScoresUrlWithFilter = computed(() => {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  return `/api/admin/export/study1-phase1-scores?${q.toString()}`;
+});
 
 function fetchPlans() {
   const q = new URLSearchParams();
@@ -499,6 +514,7 @@ function toggleSort(key) {
 }
 .data-table td.cell-body { white-space: pre-wrap; word-break: break-word; }
 .data-table td.cell-big-idea { white-space: pre-wrap; word-break: break-word; }
+.cell-name { min-width: 4em; word-break: keep-all; overflow-wrap: normal; }
 .th-sort { cursor: pointer; }
 .sort-icon { margin-left: 4px; }
 .text-table-sub { font-size: 12px; }

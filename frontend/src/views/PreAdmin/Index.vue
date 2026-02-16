@@ -3,8 +3,8 @@
     <header class="top-bar panel-border">
       <h1 class="text-h1 left">广告创意研究实验数据管理平台（预实验）</h1>
       <div class="top-actions">
-        <a :href="exportPlansUrl" class="btn-primary" download>导出被试的方案</a>
-        <a :href="exportScoresUrl" class="btn-primary" download>导出专家每道题目的评分</a>
+        <a v-if="filters.dataType === 'plans'" :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
+        <a v-else :href="exportScoresUrlWithFilter" class="btn-primary" download>导出专家评分</a>
       </div>
     </header>
     <div class="main-grid">
@@ -27,13 +27,20 @@
             class="filter-input"
             placeholder="模糊搜索"
           />
+          <label v-if="filters.dataType === 'scores'" class="filter-label">专家姓名</label>
+          <input
+            v-if="filters.dataType === 'scores'"
+            v-model="filters.expertName"
+            type="text"
+            class="filter-input"
+            placeholder="按专家姓名筛选"
+          />
           <label class="filter-label">数据状态</label>
           <select v-model="filters.dataStatus" class="filter-select">
             <option value="">全部</option>
             <option value="valid">有效</option>
             <option value="invalid">无效</option>
           </select>
-          <p v-if="filters.dataType === 'scores' && filters.dataStatus === 'invalid'" class="filter-hint text-hint">筛选“无效”时显示被标记为无效的被试的全部专家评分，可区分哪位专家标了无效、哪位专家打了分。</p>
         </div>
       </aside>
       <section class="table-panel panel-border">
@@ -55,7 +62,7 @@
               <tbody>
                 <tr v-for="r in paginatedPlans" :key="r.id">
                   <td>{{ r.subject_id }}</td>
-                  <td>{{ r.name }}</td>
+                  <td class="cell-name">{{ r.name || '—' }}</td>
                   <td class="cell-body">{{ r.target_audience }}</td>
                   <td class="cell-body">{{ r.pain_point }}</td>
                   <td class="cell-body">{{ r.insight }}</td>
@@ -82,7 +89,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th colspan="6" class="text-table-head">预实验/专家评分</th>
+                  <th colspan="7" class="text-table-head">预实验/专家评分</th>
                 </tr>
                 <tr>
                   <th v-for="c in scoreColumns" :key="c.key" class="text-table-head th-sort" @click="sortScoreBy(c.key)">
@@ -94,6 +101,7 @@
               <tbody>
                 <tr v-for="r in paginatedScores" :key="r.id">
                   <td>{{ r.subject_id }}</td>
+                  <td class="cell-name">{{ r.subject_name || '—' }}</td>
                   <td>{{ r.expert_name }}</td>
                   <td>{{ r.question_no }}</td>
                   <td :class="{ 'text-score invalid': r.is_invalid }">{{ r.score }}</td>
@@ -122,6 +130,7 @@ const filters = ref({
   experimentType: 'pre',
   dataType: 'plans',
   keyword: '',
+  expertName: '',
   dataStatus: '',
 });
 
@@ -136,7 +145,7 @@ const pageSize = 20;
 
 const planColumns = [
   { key: 'subject_id', label: '被试编号' },
-  { key: 'name', label: '姓名' },
+  { key: 'name', label: '被试姓名' },
   { key: 'target_audience', label: '目标受众画像' },
   { key: 'pain_point', label: '痛点挖掘' },
   { key: 'insight', label: '核心洞察' },
@@ -151,6 +160,7 @@ const planColumns = [
 
 const scoreColumns = [
   { key: 'subject_id', label: '被试编号' },
+  { key: 'subject_name', label: '被试姓名' },
   { key: 'expert_name', label: '专家姓名' },
   { key: 'question_no', label: '题号' },
   { key: 'score', label: '分数' },
@@ -158,8 +168,19 @@ const scoreColumns = [
   { key: 'scored_at', label: '打分时间' },
 ];
 
-const exportPlansUrl = '/api/admin/export/pre-plans';
-const exportScoresUrl = '/api/admin/export/pre-scores';
+const exportPlansUrlWithFilter = computed(() => {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  if (filters.value.dataStatus) q.set('dataStatus', filters.value.dataStatus);
+  return `/api/admin/export/pre-plans?${q.toString()}`;
+});
+const exportScoresUrlWithFilter = computed(() => {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  if (filters.value.expertName) q.set('expertName', filters.value.expertName);
+  if (filters.value.dataStatus) q.set('dataStatus', filters.value.dataStatus);
+  return `/api/admin/export/pre-scores?${q.toString()}`;
+});
 
 function fetchPlans() {
   const q = new URLSearchParams();
@@ -209,6 +230,7 @@ function fetchExpertInvalidSubjects() {
 function fetchScores() {
   const q = new URLSearchParams();
   if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  if (filters.value.expertName) q.set('expertName', filters.value.expertName);
   if (filters.value.dataStatus) q.set('dataStatus', filters.value.dataStatus);
   fetch(`/api/admin/pre/scores?${q.toString()}`)
     .then((r) => r.json())
@@ -217,7 +239,7 @@ function fetchScores() {
 }
 
 watch(
-  () => [filters.value.dataType, filters.value.keyword, filters.value.dataStatus],
+  () => [filters.value.dataType, filters.value.keyword, filters.value.expertName, filters.value.dataStatus],
   () => {
     page.value = 1;
     sortKey.value = '';
@@ -418,6 +440,7 @@ function sortScoreBy(key) {
 }
 .data-table td.cell-body { white-space: pre-wrap; word-break: break-word; }
 .data-table td.cell-big-idea { white-space: pre-wrap; word-break: break-word; }
+.cell-name { min-width: 4em; word-break: keep-all; overflow-wrap: normal; }
 .text-score.invalid { color: var(--color-invalid); }
 .data-table td.invalid-cell { color: var(--color-invalid); font-weight: 500; }
 .th-sort { cursor: pointer; }
