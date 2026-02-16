@@ -1,0 +1,6 @@
+# Railway 构建与启动配置（避免自动检测失败）
+[build]
+buildCommand = "npm install && npm run build"
+
+[deploy]
+startCommand = "npm start"
