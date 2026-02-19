@@ -4,7 +4,7 @@
     <div class="top-section">
       <div class="file-container panel-border top-desc">
         <p class="text-body">感谢您的创作！下面我们为您提供了一份AI作品，请您为您的作品和AI作品的创造力分别打分，并选择其一提交作为第一环节的最终作品。</p>
-        <p class="text-hint" style="margin-top: 8px;">奖励机制： 您提交的最终作品将参与评审打分，所有作品综合排名前 20% 的创作者将获得额外【10元】的奖金，排名20%-80%的创作者将获得额外【5元】的奖金。</p>
+        <p class="text-hint" style="margin-top: 8px;">奖励机制： 您提交的最终作品将参与评审打分，所有作品综合排名前 20% 的创作者将获得额外【10元】的奖金，排名20%-70%的创作者将获得额外【5元】的奖金。</p>
       </div>
       <div class="file-container panel-border top-brief">
         <div class="brief-preview text-body">{{ briefPreview }}</div>
