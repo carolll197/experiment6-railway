@@ -16,17 +16,41 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import BaseScoreAxis from '../../components/BaseScoreAxis.vue';
 import BasePrimaryButton from '../../components/BasePrimaryButton.vue';
 import { cseItems } from '../../content/study1Content.js';
 
 const props = defineProps({
   subjectId: { type: String, default: '' },
+  initialCseScores: { type: Object, default: null },
 });
-const emit = defineEmits(['next']);
+const emit = defineEmits(['next', 'save']);
 
-const cseScores = ref({ 1: null, 2: null, 3: null, 4: null });
+const defaultScores = () => ({ 1: null, 2: null, 3: null, 4: null });
+const cseScores = ref({ ...defaultScores() });
+
+onMounted(() => {
+  const init = props.initialCseScores;
+  if (init && typeof init === 'object') {
+    const o = { ...defaultScores() };
+    for (const k of [1, 2, 3, 4]) if (init[k] != null) o[k] = init[k];
+    cseScores.value = o;
+  }
+});
+
+let saveTimer = null;
+watch(
+  () => ({ ...cseScores.value }),
+  () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      emit('save', { step2Cse: { ...cseScores.value } });
+      saveTimer = null;
+    }, 500);
+  },
+  { deep: true }
+);
 
 function setScore(no, value) {
   cseScores.value[no] = value;

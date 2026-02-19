@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import BaseScoreAxis from '../../components/BaseScoreAxis.vue';
 import BasePrimaryButton from '../../components/BasePrimaryButton.vue';
 import BriefContent from '../../components/BriefContent.vue';
@@ -115,24 +115,25 @@ import { creativityScaleItems } from '../../content/preExperiment.js';
 const props = defineProps({
   phase1Plan: { type: Object, default: () => ({}) },
   subjectId: String,
+  initialScores: { type: Object, default: null },
+  initialSubmitStep: { type: Boolean, default: false },
+  initialChosenSide: { type: String, default: '' },
+  initialLeftFirst: { type: Boolean, default: null },
 });
-const emit = defineEmits(['next']);
+const emit = defineEmits(['next', 'save']);
 
-// 每次进入本步骤（组件挂载）时随机左右顺序，保证“您的作品”与“AI作品”左右随机
-const leftFirst = ref(false);
+// 恢复或随机左右顺序
+const leftFirst = ref(props.initialLeftFirst !== null && props.initialLeftFirst !== undefined ? props.initialLeftFirst : Math.random() >= 0.5);
 const leftLabel = computed(() => (leftFirst.value ? '您的作品' : 'AI作品'));
 const rightLabel = computed(() => (leftFirst.value ? 'AI作品' : '您的作品'));
-// 单选框 value 必须与左右展示一致，否则 leftFirst 随机时会出现“选 AI 却提交成您的作品”
 const leftOptionValue = computed(() => (leftFirst.value ? 'yours' : 'ai'));
 const rightOptionValue = computed(() => (leftFirst.value ? 'ai' : 'yours'));
-// 下方评分栏：第一列对应左侧作品、第二列对应右侧作品，与上方展示顺序一致
 
 const leftWork = computed(() => (leftFirst.value ? props.phase1Plan : study1AiWork));
 const rightWork = computed(() => (leftFirst.value ? study1AiWork : props.phase1Plan));
 
-// 每次组件挂载时重新计算随机值，确保每次打开页面时都能随机决定左右顺序
 onMounted(() => {
-  leftFirst.value = Math.random() >= 0.5;
+  if (props.initialLeftFirst === null || props.initialLeftFirst === undefined) leftFirst.value = Math.random() >= 0.5;
 });
 
 const briefExpanded = ref(false);
@@ -141,7 +142,7 @@ const briefPreview = computed(() => {
   return s + (briefQuestion1.length > 80 ? '…' : '');
 });
 
-const scores = ref({});
+const scores = ref(props.initialScores && typeof props.initialScores === 'object' ? { ...props.initialScores } : {});
 function getScore(questionNo, which) {
   const k = `${questionNo}_${which}`;
   return scores.value[k] ?? null;
@@ -157,9 +158,27 @@ const scoresFilled = computed(() => {
   return true;
 });
 
-const submitStep = ref(false);
-const chosenSide = ref('');
+const submitStep = ref(!!props.initialSubmitStep);
+const chosenSide = ref(props.initialChosenSide || '');
 const radioName = 'phase1_choice_' + Math.random();
+
+let saveTimer = null;
+function emitSave() {
+  emit('save', {
+    step5Scores: { ...scores.value },
+    step5SubmitStep: submitStep.value,
+    step5ChosenSide: chosenSide.value,
+    step5LeftFirst: leftFirst.value,
+  });
+}
+watch(
+  () => ({ scores: { ...scores.value }, submitStep: submitStep.value, chosenSide: chosenSide.value }),
+  () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(emitSave, 500);
+  },
+  { deep: true }
+);
 
 function buildScoresJson() {
   const arr = [];

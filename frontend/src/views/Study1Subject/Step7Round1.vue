@@ -82,30 +82,34 @@ import BriefContent from '../../components/BriefContent.vue';
 import AiSuggestionContent from '../../components/AiSuggestionContent.vue';
 import { briefQuestion2Full, aiSuggestionQuestion2 } from '../../content/study1Content.js';
 
-const props = defineProps({ subjectId: String, name: String });
-const emit = defineEmits(['next']);
+const props = defineProps({
+  subjectId: String,
+  name: String,
+  initialState: { type: Object, default: null },
+});
+const emit = defineEmits(['next', 'save']);
 
 const TOTAL_SEC = 10 * 60;
-const remaining = ref(TOTAL_SEC);
+const init = props.initialState;
+const remaining = ref(
+  init?.timerRemaining != null && init.timerRemaining > 0 && init.timerRemaining <= TOTAL_SEC ? init.timerRemaining : TOTAL_SEC
+);
 let timer = null;
 const timeText = computed(() => `剩余${Math.floor(remaining.value / 60)}分${remaining.value % 60}秒`);
 
-const innerStep = ref(0);
-const countdown = ref(10);
+const innerStep = ref(init?.innerStep === 1 ? 1 : 0);
+const countdown = ref(init?.countdown != null ? Math.max(0, Number(init.countdown)) : 10);
 let countdownTimer = null;
 
-// 10秒按钮倒计时在 mount 时启动；10分钟创作计时在进入协作界面后启动
 onMounted(() => {
-  countdown.value = 10;
-  countdownTimer = setInterval(() => {
-    if (countdown.value > 0) countdown.value--;
-    else if (countdownTimer) clearInterval(countdownTimer);
-  }, 1000);
-});
-
-watch(innerStep, (val) => {
-  if (val === 1 && !timer) {
-    remaining.value = TOTAL_SEC;
+  if (innerStep.value === 0 && (init?.countdown == null || init?.innerStep !== 0)) {
+    countdown.value = 10;
+    countdownTimer = setInterval(() => {
+      if (countdown.value > 0) countdown.value--;
+      else if (countdownTimer) clearInterval(countdownTimer);
+    }, 1000);
+  } else if (innerStep.value === 1 && !timer) {
+    if (init?.timerRemaining != null && init.timerRemaining > 0) remaining.value = init.timerRemaining;
     timer = setInterval(() => {
       remaining.value--;
       if (remaining.value <= 0) {
@@ -113,15 +117,42 @@ watch(innerStep, (val) => {
         submitPlan(true);
       }
     }, 1000);
+    saveInterval = setInterval(emitSave, 30000);
   }
 });
 
-onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearInterval(countdownTimer); });
+watch(innerStep, (val) => {
+  if (val === 1 && !timer) {
+    timer = setInterval(() => {
+      remaining.value--;
+      if (remaining.value <= 0) {
+        if (timer) clearInterval(timer);
+        submitPlan(true);
+      }
+    }, 1000);
+    if (!saveInterval) saveInterval = setInterval(emitSave, 30000);
+  }
+});
+watch(() => ({ ...form.value }), () => { setTimeout(emitSave, 600); }, { deep: true });
 
-const aiSent = ref(false);
-const aiNodes = ref([]);
-const aiDone = ref(false);
 const AI_NODES = ['分析题目及评价维度', '分析产出要求', '构思方案', '生成方案'];
+const aiSent = ref(!!init?.aiSent);
+const aiNodes = ref(init?.aiSent ? [...AI_NODES] : []);
+const aiDone = ref(!!init?.aiDone);
+
+let saveInterval = null;
+function emitSave() {
+  emit('save', {
+    form: { ...form.value },
+    timerRemaining: remaining.value,
+    innerStep: innerStep.value,
+    countdown: countdown.value,
+    aiSent: aiSent.value,
+    aiDone: aiDone.value,
+  });
+}
+
+onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearInterval(countdownTimer); if (saveInterval) clearInterval(saveInterval); });
 
 function sendAi() {
   aiSent.value = true;
@@ -138,7 +169,8 @@ function sendAi() {
   setTimeout(addNode, 400);
 }
 
-const form = ref({ target_audience: '', pain_point: '', insight: '', big_idea: '', rationale: '' });
+const defaultForm = () => ({ target_audience: '', pain_point: '', insight: '', big_idea: '', rationale: '' });
+const form = ref(init?.form && typeof init.form === 'object' ? { ...defaultForm(), ...init.form } : defaultForm());
 const modules = [
   { key: 'target_audience', title: '目标受众画像 (Target Audience)', hint: '您打算把这个产品卖给哪类人群？有典型人物吗？ta是一个怎样的人？', placeholder: '', big: false },
   { key: 'pain_point', title: '痛点挖掘(The Pain Point)', hint: 'ta为什么这样做？ta在烦恼什么？', placeholder: '', big: false },

@@ -61,13 +61,19 @@ const props = defineProps({
   name: String,
   visitorId: String,
   initialCreativeForm: { type: Object, default: () => ({}) },
+  initialTimerRemaining: { type: Number, default: null },
 });
 const emit = defineEmits(['next', 'saveProgress']);
 
 const TOTAL_SEC = 10 * 60;
-const remaining = ref(TOTAL_SEC);
+const remaining = ref(
+  props.initialTimerRemaining != null && props.initialTimerRemaining > 0 && props.initialTimerRemaining <= TOTAL_SEC
+    ? props.initialTimerRemaining
+    : TOTAL_SEC
+);
 let timer = null;
 let saveProgressTimer = null;
+let saveProgressInterval = null;
 
 const timeText = computed(() => {
   const r = remaining.value;
@@ -197,12 +203,18 @@ function onConfirmAutoSaved() {
   emit('next');
 }
 
+function emitProgress() {
+  emit('saveProgress', { form: { ...form.value }, timerRemaining: remaining.value });
+}
+
 onMounted(() => {
   const init = props.initialCreativeForm;
   if (init && typeof init === 'object') {
     form.value = { ...defaultForm(), ...init };
   }
-  remaining.value = TOTAL_SEC;
+  if (props.initialTimerRemaining != null && props.initialTimerRemaining > 0 && props.initialTimerRemaining <= TOTAL_SEC) {
+    remaining.value = props.initialTimerRemaining;
+  }
   timer = setInterval(() => {
     remaining.value--;
     if (remaining.value <= 0) {
@@ -210,15 +222,14 @@ onMounted(() => {
       submitPlan(true);
     }
   }, 1000);
+  saveProgressInterval = setInterval(emitProgress, 30000);
 });
 
 watch(
   () => ({ ...form.value }),
   () => {
     if (saveProgressTimer) clearTimeout(saveProgressTimer);
-    saveProgressTimer = setTimeout(() => {
-      emit('saveProgress', { ...form.value });
-    }, 800);
+    saveProgressTimer = setTimeout(emitProgress, 800);
   },
   { deep: true }
 );
@@ -226,6 +237,7 @@ watch(
 onUnmounted(() => {
   if (timer) clearInterval(timer);
   if (saveProgressTimer) clearTimeout(saveProgressTimer);
+  if (saveProgressInterval) clearInterval(saveProgressInterval);
 });
 </script>
 

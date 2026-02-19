@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import BaseTextArea from '../../components/BaseTextArea.vue';
 import BasePrimaryButton from '../../components/BasePrimaryButton.vue';
 import BaseModal from '../../components/BaseModal.vue';
@@ -42,20 +42,29 @@ import EvalDimension from '../../components/EvalDimension.vue';
 import BriefContent from '../../components/BriefContent.vue';
 import { briefQuestion1 } from '../../content/study1Content.js';
 
-const props = defineProps({ subjectId: String, name: String });
-const emit = defineEmits(['next']);
+const props = defineProps({
+  subjectId: String,
+  name: String,
+  initialForm: { type: Object, default: null },
+  initialTimerRemaining: { type: Number, default: null },
+});
+const emit = defineEmits(['next', 'save']);
 
 const TOTAL_SEC = 10 * 60;
-const remaining = ref(TOTAL_SEC);
+const defaultForm = () => ({ target_audience: '', pain_point: '', insight: '', big_idea: '', rationale: '' });
+const remaining = ref(
+  props.initialTimerRemaining != null && props.initialTimerRemaining > 0 && props.initialTimerRemaining <= TOTAL_SEC
+    ? props.initialTimerRemaining
+    : TOTAL_SEC
+);
 let timer = null;
+let saveInterval = null;
 const timeText = computed(() => {
   const r = remaining.value;
   return `剩余${Math.floor(r / 60)}分${r % 60}秒`;
 });
 
-const form = ref({
-  target_audience: '', pain_point: '', insight: '', big_idea: '', rationale: '',
-});
+const form = ref({ ...defaultForm() });
 
 const modules = [
   { key: 'target_audience', title: '目标受众画像 (Target Audience)', hint: '您打算把这个产品卖给哪类人群？有典型人物吗？ta是一个怎样的人？', placeholder: '', big: false },
@@ -126,14 +135,28 @@ function onConfirmAutoSaved() {
   emit('next', { ...form.value });
 }
 
+function emitSave() {
+  emit('save', { step4Form: { ...form.value }, step4TimerRemaining: remaining.value });
+}
+
 onMounted(() => {
-  remaining.value = TOTAL_SEC;
+  const init = props.initialForm;
+  if (init && typeof init === 'object') form.value = { ...defaultForm(), ...init };
+  if (props.initialTimerRemaining != null && props.initialTimerRemaining > 0 && props.initialTimerRemaining <= TOTAL_SEC)
+    remaining.value = props.initialTimerRemaining;
   timer = setInterval(() => {
     remaining.value--;
     if (remaining.value <= 0) { if (timer) clearInterval(timer); submitPlan(true); }
   }, 1000);
+  saveInterval = setInterval(emitSave, 30000);
 });
-onUnmounted(() => { if (timer) clearInterval(timer); });
+
+watch(() => ({ ...form.value }), () => { setTimeout(emitSave, 600); }, { deep: true });
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
+  if (saveInterval) clearInterval(saveInterval);
+});
 </script>
 
 <style scoped>

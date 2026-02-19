@@ -34,6 +34,7 @@ preSubjectRouter.get('/progress', (req, res) => {
       subjectId: row.subject_id ?? '',
       name: row.name ?? '',
       creativeForm: data.creativeForm || {},
+      timerRemaining: data.timerRemaining != null ? Number(data.timerRemaining) : null,
     });
   } catch (e) {
     console.error(e);
@@ -48,8 +49,11 @@ preSubjectRouter.post('/progress', (req, res) => {
     const visitorId = (req.headers['x-visitor-id'] || req.body?.visitor_id || '').trim();
     if (!visitorId) return res.status(400).json({ error: '缺少 visitor_id' });
     const ip = getClientIp(req);
-    const { step, subject_id, name, creativeForm, submitted } = req.body;
-    const dataJson = JSON.stringify({ creativeForm: creativeForm || {} });
+    const { step, subject_id, name, creativeForm, timerRemaining, submitted } = req.body;
+    const dataJson = JSON.stringify({
+      creativeForm: creativeForm || {},
+      timerRemaining: timerRemaining != null ? Number(timerRemaining) : undefined,
+    });
     const updatedAt = nowStr();
     const submittedAt = submitted ? updatedAt : null;
     db.run(

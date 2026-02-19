@@ -14,6 +14,7 @@
       :name="name"
       :visitor-id="visitorId"
       :initial-creative-form="creativeForm"
+      :initial-timer-remaining="timerRemaining"
       @next="step = 4"
       @save-progress="onSaveCreativeProgress"
     />
@@ -35,6 +36,7 @@ const step = ref(0);
 const subjectId = ref('');
 const name = ref('');
 const creativeForm = ref({});
+const timerRemaining = ref(null);
 
 function headers() {
   return { 'Content-Type': 'application/json', 'X-Visitor-Id': visitorId };
@@ -45,22 +47,27 @@ function onStepNext(nextStep) {
   saveProgress(nextStep);
 }
 
-function saveProgress(currentStep, creativeFormData) {
+function saveProgress(currentStep, creativeFormData, timerRemainingSec) {
+  const body = {
+    step: currentStep,
+    subject_id: subjectId.value,
+    name: name.value,
+    creativeForm: creativeFormData ?? creativeForm.value,
+  };
+  if (timerRemainingSec != null) body.timerRemaining = timerRemainingSec;
   fetch('/api/pre-subject/progress', {
     method: 'POST',
     headers: headers(),
-    body: JSON.stringify({
-      step: currentStep,
-      subject_id: subjectId.value,
-      name: name.value,
-      creativeForm: creativeFormData ?? creativeForm.value,
-    }),
+    body: JSON.stringify(body),
   }).catch(() => {});
 }
 
-function onSaveCreativeProgress(form) {
-  creativeForm.value = form;
-  saveProgress(3, form);
+function onSaveCreativeProgress(payload) {
+  const form = payload && typeof payload.form !== 'undefined' ? payload.form : payload;
+  const sec = payload && typeof payload.timerRemaining === 'number' ? payload.timerRemaining : null;
+  if (form && typeof form === 'object') creativeForm.value = form;
+  if (sec != null) timerRemaining.value = sec;
+  saveProgress(3, form && typeof form === 'object' ? form : creativeForm.value, sec);
 }
 
 onMounted(() => {
@@ -76,6 +83,7 @@ onMounted(() => {
         if (data.subjectId != null) subjectId.value = data.subjectId;
         if (data.name != null) name.value = data.name;
         if (data.creativeForm && typeof data.creativeForm === 'object') creativeForm.value = data.creativeForm;
+        if (data.timerRemaining != null && data.timerRemaining > 0) timerRemaining.value = data.timerRemaining;
       }
     })
     .catch(() => {});

@@ -3,7 +3,10 @@
     <header class="top-bar panel-border">
       <h1 class="text-h1 left">广告创意研究实验数据管理平台（研究一）</h1>
       <div class="top-actions">
-        <a v-if="filters.dataType === 'plans'" :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
+        <template v-if="filters.dataType === 'plans'">
+          <a :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanIds.size === 0" @click="deleteSelectedStudy1Plans">删除选中方案</button>
+        </template>
         <a v-else-if="filters.dataType === 'cse'" :href="exportCseUrlWithFilter" class="btn-primary" download>导出CSE量表数据</a>
         <a v-else-if="filters.dataType === 'phase1-choices'" :href="exportPhase1ScoresUrlWithFilter" class="btn-primary" download>导出环节一打分</a>
       </div>
@@ -54,9 +57,12 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th :colspan="planColumns.length" class="text-table-head">研究一/被试方案</th>
+                  <th :colspan="planColumns.length + 1" class="text-table-head">研究一/被试方案</th>
                 </tr>
                 <tr>
+                  <th class="text-table-head th-checkbox">
+                    <input type="checkbox" :checked="allStudy1PlansSelected" :indeterminate="someStudy1PlansSelected" @change="toggleAllStudy1Plans" />
+                  </th>
                   <th
                     v-for="c in planColumns"
                     :key="c.key"
@@ -70,6 +76,9 @@
               </thead>
               <tbody>
                 <tr v-for="r in paginatedPlans" :key="r.id">
+                  <td class="td-checkbox">
+                    <input type="checkbox" :checked="selectedPlanIds.has(r.id)" @change="toggleStudy1Plan(r.id)" />
+                  </td>
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.name || '—' }}</td>
                   <td>{{ r.phase }}</td>
@@ -195,6 +204,39 @@ const sortKey = ref('');
 const sortOrder = ref('asc');
 const page = ref(1);
 const pageSize = 20;
+const selectedPlanIds = ref(new Set());
+
+const allStudy1PlansSelected = computed(() => paginatedPlans.value.length > 0 && paginatedPlans.value.every((r) => selectedPlanIds.value.has(r.id)));
+const someStudy1PlansSelected = computed(() => paginatedPlans.value.some((r) => selectedPlanIds.value.has(r.id)) && !allStudy1PlansSelected.value);
+
+function toggleStudy1Plan(id) {
+  const set = new Set(selectedPlanIds.value);
+  if (set.has(id)) set.delete(id);
+  else set.add(id);
+  selectedPlanIds.value = set;
+}
+function toggleAllStudy1Plans() {
+  if (allStudy1PlansSelected.value) selectedPlanIds.value = new Set();
+  else selectedPlanIds.value = new Set(paginatedPlans.value.map((r) => r.id));
+}
+function deleteSelectedStudy1Plans() {
+  if (selectedPlanIds.value.size === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedPlanIds.value.size} 条方案记录吗？`)) return;
+  fetch('/api/admin/study1/plans', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [...selectedPlanIds.value] }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.ok) {
+        selectedPlanIds.value = new Set();
+        fetchPlans();
+        fetchChoices();
+      }
+    })
+    .catch(() => {});
+}
 
 const planColumns = [
   { key: 'subject_id', label: '被试编号' },
@@ -440,6 +482,9 @@ function toggleSort(key) {
   white-space: nowrap;
 }
 .btn-primary:hover:not(.disabled-btn) { background: var(--color-secondary); }
+.btn-primary.btn-danger { background: #c62828; }
+.btn-primary.btn-danger:hover:not(:disabled) { background: #b71c1c; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .disabled-btn {
   background: var(--color-btn-disabled-bg) !important;
   color: var(--color-btn-disabled-text) !important;
@@ -516,6 +561,7 @@ function toggleSort(key) {
 .data-table td.cell-big-idea { white-space: pre-wrap; word-break: break-word; }
 .cell-name { min-width: 4em; word-break: keep-all; overflow-wrap: normal; }
 .th-sort { cursor: pointer; }
+.th-checkbox, .td-checkbox { width: 36px; text-align: center; vertical-align: middle; }
 .sort-icon { margin-left: 4px; }
 .text-table-sub { font-size: 12px; }
 .phase1-scores-wrap .data-table { min-width: 1100px; }

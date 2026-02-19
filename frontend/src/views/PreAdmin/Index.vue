@@ -3,7 +3,10 @@
     <header class="top-bar panel-border">
       <h1 class="text-h1 left">广告创意研究实验数据管理平台（预实验）</h1>
       <div class="top-actions">
-        <a v-if="filters.dataType === 'plans'" :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
+        <template v-if="filters.dataType === 'plans'">
+          <a :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanSubjectIds.size === 0" @click="deleteSelectedPrePlans">删除选中方案</button>
+        </template>
         <a v-else :href="exportScoresUrlWithFilter" class="btn-primary" download>导出专家评分</a>
       </div>
     </header>
@@ -47,12 +50,16 @@
         <template v-if="filters.dataType === 'plans'">
           <div v-if="plans.length === 0" class="empty-hint text-hint center">暂无符合条件的数据</div>
           <div v-else class="table-wrap">
+            <p class="text-hint" style="margin: 0 0 8px 0;">删除后的方案将不会在专家版评分中显示。</p>
             <table class="data-table">
               <thead>
                 <tr>
-                  <th colspan="12" class="text-table-head">预实验/被试方案</th>
+                  <th colspan="13" class="text-table-head">预实验/被试方案</th>
                 </tr>
                 <tr>
+                  <th class="text-table-head th-checkbox">
+                    <input type="checkbox" :checked="allPlansSelected" :indeterminate="somePlansSelected" @change="toggleAllPrePlans" />
+                  </th>
                   <th v-for="c in planColumns" :key="c.key" class="text-table-head th-sort" @click="sortPlanBy(c.key)">
                     {{ c.label }}
                     <span v-if="sortKey === c.key" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
@@ -61,6 +68,9 @@
               </thead>
               <tbody>
                 <tr v-for="r in paginatedPlans" :key="r.id">
+                  <td class="td-checkbox">
+                    <input type="checkbox" :checked="selectedPlanSubjectIds.has(r.subject_id)" @change="togglePrePlan(r.subject_id)" />
+                  </td>
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.name || '—' }}</td>
                   <td class="cell-body">{{ r.target_audience }}</td>
@@ -142,6 +152,39 @@ const sortKey = ref('');
 const sortOrder = ref('asc');
 const page = ref(1);
 const pageSize = 20;
+const selectedPlanSubjectIds = ref(new Set());
+
+const allPlansSelected = computed(() => paginatedPlans.value.length > 0 && paginatedPlans.value.every((r) => selectedPlanSubjectIds.value.has(r.subject_id)));
+const somePlansSelected = computed(() => paginatedPlans.value.some((r) => selectedPlanSubjectIds.value.has(r.subject_id)) && !allPlansSelected.value);
+
+function togglePrePlan(subjectId) {
+  const set = new Set(selectedPlanSubjectIds.value);
+  if (set.has(subjectId)) set.delete(subjectId);
+  else set.add(subjectId);
+  selectedPlanSubjectIds.value = set;
+}
+function toggleAllPrePlans() {
+  if (allPlansSelected.value) selectedPlanSubjectIds.value = new Set();
+  else selectedPlanSubjectIds.value = new Set(paginatedPlans.value.map((r) => r.subject_id));
+}
+function deleteSelectedPrePlans() {
+  if (selectedPlanSubjectIds.value.size === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedPlanSubjectIds.value.size} 条被试方案吗？删除后专家版将无法看到这些方案。`)) return;
+  fetch('/api/admin/pre/plans', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject_ids: [...selectedPlanSubjectIds.value] }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.ok) {
+        selectedPlanSubjectIds.value = new Set();
+        fetchPlans();
+        fetchExpertInvalidSubjects();
+      }
+    })
+    .catch(() => {});
+}
 
 const planColumns = [
   { key: 'subject_id', label: '被试编号' },
@@ -370,6 +413,9 @@ function sortScoreBy(key) {
   text-decoration: none;
 }
 .btn-primary:hover { background: var(--color-secondary); }
+.btn-primary.btn-danger { background: #c62828; }
+.btn-primary.btn-danger:hover:not(:disabled) { background: #b71c1c; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .main-grid {
   flex: 1;
   min-height: 0;
@@ -444,6 +490,7 @@ function sortScoreBy(key) {
 .text-score.invalid { color: var(--color-invalid); }
 .data-table td.invalid-cell { color: var(--color-invalid); font-weight: 500; }
 .th-sort { cursor: pointer; }
+.th-checkbox, .td-checkbox { width: 36px; text-align: center; vertical-align: middle; }
 .sort-icon { margin-left: 4px; }
 .pagination {
   display: flex;

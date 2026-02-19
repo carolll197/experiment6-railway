@@ -2,23 +2,31 @@
   <div class="study1-subject">
     <Step0Consent v-if="step === 0" @next="onStepNext(1)" />
     <Step1Collect v-else-if="step === 1" v-model:subject-id="subjectId" v-model:name="name" @next="onStep1Next" />
-    <Step2Cse v-else-if="step === 2" :subject-id="subjectId" @next="onStepNext(3)" />
+    <Step2Cse v-else-if="step === 2" :subject-id="subjectId" :initial-cse-scores="progressData.step2Cse" @next="onStepNext(3)" @save="onStep2Save" />
     <Step3Intro1 v-else-if="step === 3" @next="onStepNext(4)" />
     <Step4Creative1
       v-else-if="step === 4"
       :subject-id="subjectId"
       :name="name"
+      :initial-form="progressData.step4Form"
+      :initial-timer-remaining="progressData.step4TimerRemaining"
       @next="onPhase1Done"
+      @save="onStep4Save"
     />
     <Step5Compare
       v-else-if="step === 5"
       :phase1-plan="phase1Plan"
       :subject-id="subjectId"
+      :initial-scores="progressData.step5Scores"
+      :initial-submit-step="progressData.step5SubmitStep"
+      :initial-chosen-side="progressData.step5ChosenSide"
+      :initial-left-first="progressData.step5LeftFirst"
       @next="onStepNext(6)"
+      @save="onStep5Save"
     />
     <Step6Intro2 v-else-if="step === 6" @next="onStepNext(7)" />
-    <Step7Round1 v-else-if="step === 7" :subject-id="subjectId" :name="name" @next="onStepNext(8)" />
-    <Step8Round2 v-else-if="step === 8" :subject-id="subjectId" :name="name" @next="onStep8Next" />
+    <Step7Round1 v-else-if="step === 7" :subject-id="subjectId" :name="name" :initial-state="progressData.step7" @next="onStepNext(8)" @save="onStep7Save" />
+    <Step8Round2 v-else-if="step === 8" :subject-id="subjectId" :name="name" :initial-state="progressData.step8" @next="onStep8Next" @save="onStep8Save" />
     <Step9Thanks v-else-if="step === 9" />
   </div>
 </template>
@@ -42,12 +50,15 @@ const step = ref(0);
 const subjectId = ref('');
 const name = ref('');
 const phase1Plan = ref({});
+const progressData = ref({});
 
 function headers() {
   return { 'Content-Type': 'application/json', 'X-Visitor-Id': visitorId };
 }
 
-function saveProgress(s) {
+function saveProgress(s, patch) {
+  const data = { ...progressData.value, phase1Plan: phase1Plan.value, ...patch };
+  progressData.value = data;
   fetch('/api/study1-subject/progress', {
     method: 'POST',
     headers: headers(),
@@ -55,10 +66,31 @@ function saveProgress(s) {
       step: s,
       subject_id: subjectId.value,
       name: name.value,
-      data: { phase1Plan: phase1Plan.value },
+      data,
       submitted: s === 9,
     }),
   }).catch(() => {});
+}
+
+function onStep2Save(payload) {
+  saveProgress(2, { step2Cse: payload?.step2Cse });
+}
+function onStep4Save(payload) {
+  saveProgress(4, { step4Form: payload?.step4Form, step4TimerRemaining: payload?.step4TimerRemaining });
+}
+function onStep5Save(payload) {
+  saveProgress(5, {
+    step5Scores: payload?.step5Scores,
+    step5SubmitStep: payload?.step5SubmitStep,
+    step5ChosenSide: payload?.step5ChosenSide,
+    step5LeftFirst: payload?.step5LeftFirst,
+  });
+}
+function onStep7Save(payload) {
+  saveProgress(7, { step7: payload });
+}
+function onStep8Save(payload) {
+  saveProgress(8, { step8: payload });
 }
 
 function onStepNext(nextStep) {
@@ -102,7 +134,10 @@ onMounted(() => {
         step.value = data.step;
         if (data.subjectId != null) subjectId.value = data.subjectId;
         if (data.name != null) name.value = data.name;
-        if (data.data?.phase1Plan) phase1Plan.value = data.data.phase1Plan;
+        if (data.data && typeof data.data === 'object') {
+          progressData.value = data.data;
+          if (data.data.phase1Plan) phase1Plan.value = data.data.phase1Plan;
+        }
       }
     })
     .catch(() => {});

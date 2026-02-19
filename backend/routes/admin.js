@@ -3,6 +3,23 @@ import XLSX from 'xlsx';
 
 export const adminRouter = Router();
 
+// 预实验 - 批量删除被试方案（同步：专家版将不再看到这些方案；同时删除其专家评分）
+adminRouter.delete('/pre/plans', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { subject_ids: subjectIds } = req.body || {};
+    const ids = Array.isArray(subjectIds) ? subjectIds.map((s) => String(s).trim()).filter(Boolean) : [];
+    if (ids.length === 0) return res.status(400).json({ error: '请提供 subject_ids' });
+    const placeholders = ids.map(() => '?').join(',');
+    db.run(`DELETE FROM pre_expert_scores WHERE subject_id IN (${placeholders})`, ids);
+    db.run(`DELETE FROM pre_subject_plans WHERE subject_id IN (${placeholders})`, ids);
+    res.json({ ok: true, deleted: ids.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 预实验 - 被试方案列表（支持筛选）
 adminRouter.get('/pre/plans', (req, res) => {
   try {
@@ -80,6 +97,22 @@ adminRouter.get('/pre/expert-invalid-subjects', (req, res) => {
     const subjectIds = [...new Set(rows.map((r) => String(r.subject_id ?? '')))];
     const details = rows.map((r) => ({ subject_id: String(r.subject_id ?? ''), expert_name: String(r.expert_name ?? '') }));
     res.json({ subjectIds, details });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 研究一 - 批量删除被试方案（按方案行 id 删除）
+adminRouter.delete('/study1/plans', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM study1_subject_plans WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
