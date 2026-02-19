@@ -142,6 +142,22 @@ function runSchema() {
   );
   `;
   rawDb.exec(schema);
+
+  // 为已存在的旧表补齐可能缺失的列（CREATE TABLE IF NOT EXISTS 不会更新旧表）
+  const migrations = [
+    ['pre_subject_plans', 'start_time', 'TEXT'],
+    ['pre_subject_plans', 'end_time', 'TEXT'],
+    ['study1_subject_plans', 'start_time', 'TEXT'],
+    ['study1_subject_plans', 'end_time', 'TEXT'],
+  ];
+  for (const [table, col, type] of migrations) {
+    try {
+      rawDb.run(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
+    } catch (_) {
+      // 列已存在则忽略
+    }
+  }
+
   // 回填 study1_subjects：从已有方案表取每个被试的姓名（任选一条）
   try {
     const backfill = rawDb.prepare(`
