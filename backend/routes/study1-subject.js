@@ -33,6 +33,8 @@ study1SubjectRouter.get('/progress', (req, res) => {
       subjectId: row.subject_id ?? '',
       name: row.name ?? '',
       data: data,
+      startTime: data.startTime || null,
+      endTime: data.endTime || null,
     });
   } catch (e) {
     console.error(e);
@@ -47,8 +49,12 @@ study1SubjectRouter.post('/progress', (req, res) => {
     const visitorId = (req.headers['x-visitor-id'] || req.body?.visitor_id || '').trim();
     if (!visitorId) return res.status(400).json({ error: '缺少 visitor_id' });
     const ip = getClientIp(req);
-    const { step, subject_id, name, data: progressData, submitted } = req.body;
-    const dataJson = JSON.stringify(progressData || {});
+    const { step, subject_id, name, data: progressData, submitted, startTime, endTime } = req.body;
+    const dataJson = JSON.stringify({
+      ...(progressData || {}),
+      startTime: startTime,
+      endTime: endTime,
+    });
     const updatedAt = nowStr();
     const isDone = step === 9 || submitted === true;
     const submittedAt = isDone ? updatedAt : null;
@@ -122,6 +128,7 @@ study1SubjectRouter.post('/submit', (req, res) => {
       big_idea,
       rationale,
       is_auto_saved = 0,
+      startTime,
     } = req.body;
     if (!subject_id || !name || !phase || question_no == null) {
       return res.status(400).json({ error: '缺少必填字段' });
@@ -133,9 +140,11 @@ study1SubjectRouter.post('/submit', (req, res) => {
     );
     const stmt = db.prepare(`
       INSERT INTO study1_subject_plans
-        (subject_id, name, phase, question_no, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (subject_id, name, phase, question_no, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
+    const submittedAt = nowStr();
+    const { endTime } = req.body;
     stmt.run(
       subject_id,
       name,
@@ -146,8 +155,11 @@ study1SubjectRouter.post('/submit', (req, res) => {
       insight ?? '',
       big_idea ?? '',
       rationale ?? '',
-      nowStr(),
-      is_auto_saved ? 1 : 0
+      submittedAt,
+      is_auto_saved ? 1 : 0,
+      submittedAt,
+      startTime || submittedAt,
+      endTime || submittedAt
     );
     // 同步被试姓名到 study1_subjects，供主试端 CSE / 环节一选择 显示
     db.run('INSERT OR REPLACE INTO study1_subjects (subject_id, name) VALUES (?, ?)', [subject_id, name]);

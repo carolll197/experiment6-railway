@@ -78,7 +78,9 @@ function runSchema() {
     rationale TEXT,
     submitted_at TEXT,
     is_auto_saved INTEGER DEFAULT 0,
-    created_at TEXT
+    created_at TEXT,
+    start_time TEXT,
+    end_time TEXT
   );
   CREATE TABLE IF NOT EXISTS pre_expert_scores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,7 +108,9 @@ function runSchema() {
     rationale TEXT,
     submitted_at TEXT,
     is_auto_saved INTEGER DEFAULT 0,
-    created_at TEXT
+    created_at TEXT,
+    start_time TEXT,
+    end_time TEXT
   );
   CREATE TABLE IF NOT EXISTS study1_cse_scores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

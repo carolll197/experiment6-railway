@@ -15,6 +15,7 @@
       :visitor-id="visitorId"
       :initial-creative-form="creativeForm"
       :initial-timer-remaining="timerRemaining"
+      :start-time="startTime"
       @next="step = 4"
       @save-progress="onSaveCreativeProgress"
     />
@@ -37,6 +38,8 @@ const subjectId = ref('');
 const name = ref('');
 const creativeForm = ref({});
 const timerRemaining = ref(null);
+const startTime = ref(null);
+const endTime = ref(null);
 
 function headers() {
   return { 'Content-Type': 'application/json', 'X-Visitor-Id': visitorId };
@@ -53,6 +56,8 @@ function saveProgress(currentStep, creativeFormData, timerRemainingSec) {
     subject_id: subjectId.value,
     name: name.value,
     creativeForm: creativeFormData ?? creativeForm.value,
+    startTime: startTime.value,
+    endTime: currentStep === 4 ? new Date().toISOString() : endTime.value,
   };
   if (timerRemainingSec != null) body.timerRemaining = timerRemainingSec;
   fetch('/api/pre-subject/progress', {
@@ -71,6 +76,8 @@ function onSaveCreativeProgress(payload) {
 }
 
 onMounted(() => {
+  // 记录开始时间
+  startTime.value = new Date().toISOString();
   fetch('/api/pre-subject/progress', { headers: headers() })
     .then((r) => r.json())
     .then((data) => {
@@ -84,6 +91,8 @@ onMounted(() => {
         if (data.name != null) name.value = data.name;
         if (data.creativeForm && typeof data.creativeForm === 'object') creativeForm.value = data.creativeForm;
         if (data.timerRemaining != null && data.timerRemaining > 0) timerRemaining.value = data.timerRemaining;
+        if (data.startTime) startTime.value = data.startTime;
+        if (data.endTime) endTime.value = data.endTime;
       }
     })
     .catch(() => {});

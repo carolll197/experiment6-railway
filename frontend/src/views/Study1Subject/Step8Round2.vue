@@ -2,7 +2,7 @@
   <div class="round-wrap">
     <div v-if="innerStep === 0" class="issue-wrap">
       <div class="timer-bar text-score">{{ timeText }}</div>
-      <p class="text-hint center" style="margin: 16px 0;">目前为"第2题（共两题）"，每道题目您均有10分钟时间作答。产出要求与之前相同。</p>
+      <p class="text-hint center" style="margin: 16px 0;">目前为"第2题（共两题）"，每道题目您均有10分钟时间作答（倒计时结束会自动保存并提交已填内容）。产出要求与之前相同。</p>
       <div class="file-container panel-border brief-block">
         <h2 class="brief-eval-section-title">创意简报</h2>
         <p class="text-hint" style="margin: 8px 0;">"现象观察"仅用于激活思路，不要求参考，更不必全部参考。</p>

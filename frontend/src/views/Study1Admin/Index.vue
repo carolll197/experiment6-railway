@@ -94,6 +94,8 @@
                   <td class="cell-body">{{ r.insight }}</td>
                   <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
                   <td class="cell-body">{{ r.rationale }}</td>
+                  <td>{{ formatBeijingTime(r.start_time) }}</td>
+                  <td>{{ formatBeijingTime(r.end_time) }}</td>
                   <td>{{ formatBeijingTime(r.submitted_at) }}</td>
                   <td>{{ r.is_auto_saved ? '是' : '否' }}</td>
                   <td>{{ getChoice(r.subject_id) }}</td>
@@ -333,6 +335,8 @@ const planColumns = [
   { key: 'insight', label: '核心洞察' },
   { key: 'big_idea', label: '核心创意' },
   { key: 'rationale', label: '创意理由' },
+  { key: 'start_time', label: '开始时间' },
+  { key: 'end_time', label: '结束时间' },
   { key: 'submitted_at', label: '提交时间' },
   { key: 'is_auto_saved', label: '是否自动保存' },
   { key: 'chosen', label: '环节一最终提交作品' },

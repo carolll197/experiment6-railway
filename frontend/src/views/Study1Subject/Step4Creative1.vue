@@ -47,6 +47,7 @@ const props = defineProps({
   name: String,
   initialForm: { type: Object, default: null },
   initialTimerRemaining: { type: Number, default: null },
+  startTime: String,
 });
 const emit = defineEmits(['next', 'save']);
 
@@ -107,6 +108,8 @@ function submitPlan(isAutoSaved) {
     big_idea: form.value.big_idea,
     rationale: form.value.rationale,
     is_auto_saved: isAutoSaved ? 1 : 0,
+    startTime: props.startTime,
+    endTime: new Date().toISOString(),
   };
   fetch('/api/study1-subject/submit', {
     method: 'POST',

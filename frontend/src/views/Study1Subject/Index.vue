@@ -10,6 +10,7 @@
       :name="name"
       :initial-form="progressData.step4Form"
       :initial-timer-remaining="progressData.step4TimerRemaining"
+      :start-time="startTime"
       @next="onPhase1Done"
       @save="onStep4Save"
     />
@@ -51,6 +52,8 @@ const subjectId = ref('');
 const name = ref('');
 const phase1Plan = ref({});
 const progressData = ref({});
+const startTime = ref(null);
+const endTime = ref(null);
 
 function headers() {
   return { 'Content-Type': 'application/json', 'X-Visitor-Id': visitorId };
@@ -68,6 +71,8 @@ function saveProgress(s, patch) {
       name: name.value,
       data,
       submitted: s === 9,
+      startTime: startTime.value,
+      endTime: s === 9 ? new Date().toISOString() : endTime.value,
     }),
   }).catch(() => {});
 }
@@ -123,6 +128,8 @@ function onStep8Next() {
 }
 
 onMounted(() => {
+  // 记录开始时间
+  startTime.value = new Date().toISOString();
   fetch('/api/study1-subject/progress', { headers: headers() })
     .then((r) => r.json())
     .then((data) => {
@@ -138,6 +145,8 @@ onMounted(() => {
           progressData.value = data.data;
           if (data.data.phase1Plan) phase1Plan.value = data.data.phase1Plan;
         }
+        if (data.startTime) startTime.value = data.startTime;
+        if (data.endTime) endTime.value = data.endTime;
       }
     })
     .catch(() => {});

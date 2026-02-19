@@ -62,6 +62,7 @@ const props = defineProps({
   visitorId: String,
   initialCreativeForm: { type: Object, default: () => ({}) },
   initialTimerRemaining: { type: Number, default: null },
+  startTime: String,
 });
 const emit = defineEmits(['next', 'saveProgress']);
 
@@ -172,6 +173,8 @@ function submitPlan(isAutoSaved) {
     big_idea: form.value.big_idea,
     rationale: form.value.rationale,
     is_auto_saved: isAutoSaved ? 1 : 0,
+    startTime: props.startTime,
+    endTime: new Date().toISOString(),
   };
   const h = { 'Content-Type': 'application/json' };
   if (props.visitorId) h['X-Visitor-Id'] = props.visitorId;

@@ -35,6 +35,8 @@ preSubjectRouter.get('/progress', (req, res) => {
       name: row.name ?? '',
       creativeForm: data.creativeForm || {},
       timerRemaining: data.timerRemaining != null ? Number(data.timerRemaining) : null,
+      startTime: data.startTime || null,
+      endTime: data.endTime || null,
     });
   } catch (e) {
     console.error(e);
@@ -49,10 +51,12 @@ preSubjectRouter.post('/progress', (req, res) => {
     const visitorId = (req.headers['x-visitor-id'] || req.body?.visitor_id || '').trim();
     if (!visitorId) return res.status(400).json({ error: '缺少 visitor_id' });
     const ip = getClientIp(req);
-    const { step, subject_id, name, creativeForm, timerRemaining, submitted } = req.body;
+    const { step, subject_id, name, creativeForm, timerRemaining, submitted, startTime, endTime } = req.body;
     const dataJson = JSON.stringify({
       creativeForm: creativeForm || {},
       timerRemaining: timerRemaining != null ? Number(timerRemaining) : undefined,
+      startTime: startTime,
+      endTime: endTime,
     });
     const updatedAt = nowStr();
     const submittedAt = submitted ? updatedAt : null;
@@ -86,6 +90,8 @@ preSubjectRouter.post('/submit', (req, res) => {
       big_idea,
       rationale,
       is_auto_saved = 0,
+      startTime,
+      endTime,
     } = req.body;
     if (!subject_id || !name) {
       return res.status(400).json({ error: '缺少被试编号或姓名' });
@@ -95,8 +101,8 @@ preSubjectRouter.post('/submit', (req, res) => {
     db.run('DELETE FROM pre_subject_plans WHERE subject_id = ?', [subject_id]);
     const stmt = db.prepare(`
       INSERT INTO pre_subject_plans
-        (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       subject_id,
@@ -107,7 +113,10 @@ preSubjectRouter.post('/submit', (req, res) => {
       big_idea ?? '',
       rationale ?? '',
       submittedAt,
-      is_auto_saved ? 1 : 0
+      is_auto_saved ? 1 : 0,
+      submittedAt,
+      startTime || submittedAt,
+      endTime || submittedAt
     );
     // 若带 visitor_id，标记该访客已提交，再次进入时跳转感谢页
     if (visitorId) {
