@@ -2,6 +2,66 @@ import { Router } from 'express';
 
 export const preExpertRouter = Router();
 
+function getClientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return req.socket?.remoteAddress || req.ip || '';
+}
+
+function nowStr() {
+  return new Date().toISOString().slice(0, 19).replace('T', ' ');
+}
+
+// 获取专家评分进度（同一 IP + 同一 visitor_id 可恢复）
+preExpertRouter.get('/progress', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const visitorId = req.headers['x-visitor-id'] || req.query.visitor_id || '';
+    if (!visitorId.trim()) return res.json({});
+    const row = db.prepare(
+      'SELECT data_json FROM visitor_progress WHERE visitor_id = ? AND flow = ?'
+    ).get(visitorId.trim(), 'pre-expert');
+    if (!row) return res.json({});
+    let data = {};
+    try {
+      if (row.data_json) data = JSON.parse(row.data_json);
+    } catch (_) {}
+    res.json(data);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 保存专家评分进度
+preExpertRouter.post('/progress', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const visitorId = (req.headers['x-visitor-id'] || req.body?.visitor_id || '').trim();
+    if (!visitorId) return res.status(400).json({ error: '缺少 visitor_id' });
+    const ip = getClientIp(req);
+    const { expert_name, current_subject_id, scores, is_invalid } = req.body;
+    const dataJson = JSON.stringify({
+      expert_name: expert_name || '',
+      current_subject_id: current_subject_id || '',
+      scores: scores || [],
+      is_invalid: is_invalid || false,
+    });
+    const updatedAt = nowStr();
+    db.run(
+      `INSERT INTO visitor_progress (visitor_id, flow, ip, step, data_json, updated_at)
+       VALUES (?, 'pre-expert', ?, 0, ?, ?)
+       ON CONFLICT(visitor_id, flow) DO UPDATE SET
+         ip = excluded.ip, data_json = excluded.data_json, updated_at = excluded.updated_at`,
+      [visitorId, ip, dataJson, updatedAt]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 获取待评分方案列表（仅被试编号，不暴露姓名）
 preExpertRouter.get('/plans', (req, res) => {
   try {
