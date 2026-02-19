@@ -124,9 +124,11 @@ onMounted(() => {
     }, 1000);
   } else if (innerStep.value === 1 && !timer) {
     if (init?.timerRemaining != null && init.timerRemaining > 0) remaining.value = init.timerRemaining;
+    else remaining.value = TOTAL_SEC;
     timer = setInterval(() => {
       remaining.value--;
       if (remaining.value <= 0) {
+        remaining.value = 0;
         if (timer) clearInterval(timer);
         submitPlan(true);
       }
@@ -137,9 +139,12 @@ onMounted(() => {
 
 watch(innerStep, (val) => {
   if (val === 1 && !timer) {
+    if (init?.timerRemaining != null && init.timerRemaining > 0) remaining.value = init.timerRemaining;
+    else remaining.value = TOTAL_SEC;
     timer = setInterval(() => {
       remaining.value--;
       if (remaining.value <= 0) {
+        remaining.value = 0;
         if (timer) clearInterval(timer);
         submitPlan(true);
       }
@@ -200,6 +205,9 @@ function onSubmit() {
 }
 
 function submitPlan(isAutoSaved) {
+  // 先保存状态，确保timerRemaining为0
+  emitSave();
+  
   const payload = {
     subject_id: props.subjectId,
     name: props.name,
@@ -215,10 +223,8 @@ function submitPlan(isAutoSaved) {
   fetch('/api/study1-subject/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     .then((r) => r.json())
     .then((data) => {
-      if (data.ok) {
-        // 倒计时结束自动提交时直接跳转，不需要用户确认
-        emit('next');
-      }
+      // 倒计时结束自动提交时直接跳转，不需要用户确认
+      emit('next');
     })
     .catch(() => {
       // 即使网络异常也直接跳转，确保用户体验流畅
