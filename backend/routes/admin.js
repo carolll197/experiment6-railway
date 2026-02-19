@@ -397,6 +397,38 @@ adminRouter.get('/export/study1-plans', (req, res) => {
   }
 });
 
+// 研究一 - 批量删除 CSE 量表数据
+adminRouter.delete('/study1/cse', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM study1_cse_scores WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 研究一 - 批量删除环节一选择与打分
+adminRouter.delete('/study1/phase1-choices', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { subject_ids } = req.body || {};
+    const ids = Array.isArray(subject_ids) ? subject_ids.map((s) => String(s).trim()).filter(Boolean) : [];
+    if (ids.length === 0) return res.status(400).json({ error: '请提供 subject_ids' });
+    const placeholders = ids.map(() => '?').join(',');
+    db.run(`DELETE FROM study1_phase1_choice WHERE subject_id IN (${placeholders})`, ids);
+    res.json({ ok: true, deleted: ids.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 导出研究一环节一打分（与筛选同步：keyword；含被试姓名）
 adminRouter.get('/export/study1-phase1-scores', (req, res) => {
   try {

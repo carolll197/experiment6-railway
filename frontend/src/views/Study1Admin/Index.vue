@@ -7,8 +7,14 @@
           <a :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
           <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanIds.size === 0" @click="deleteSelectedStudy1Plans">删除选中方案</button>
         </template>
-        <a v-else-if="filters.dataType === 'cse'" :href="exportCseUrlWithFilter" class="btn-primary" download>导出CSE量表数据</a>
-        <a v-else-if="filters.dataType === 'phase1-choices'" :href="exportPhase1ScoresUrlWithFilter" class="btn-primary" download>导出环节一打分</a>
+        <template v-else-if="filters.dataType === 'cse'">
+          <a :href="exportCseUrlWithFilter" class="btn-primary" download>导出CSE量表数据</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedCseIds.size === 0" @click="deleteSelectedCseData">删除选中数据</button>
+        </template>
+        <template v-else-if="filters.dataType === 'phase1-choices'">
+          <a :href="exportPhase1ScoresUrlWithFilter" class="btn-primary" download>导出环节一打分</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedChoiceSubjectIds.size === 0" @click="deleteSelectedPhase1Choices">删除选中记录</button>
+        </template>
       </div>
     </header>
     <div class="main-grid">
@@ -108,9 +114,12 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th colspan="6" class="text-table-head">研究一/CSE量表数据</th>
+                  <th :colspan="7" class="text-table-head">研究一/CSE量表数据</th>
                 </tr>
                 <tr>
+                  <th class="text-table-head th-checkbox">
+                    <input type="checkbox" :checked="allCseSelected" :indeterminate="someCseSelected" @change="toggleAllCse" />
+                  </th>
                   <th class="text-table-head th-sort" @click="toggleSortCse('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                   <th class="text-table-head">被试姓名</th>
                   <th class="text-table-head">题1</th>
@@ -121,6 +130,9 @@
               </thead>
               <tbody>
                 <tr v-for="(r, idx) in paginatedCse" :key="r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx">
+                  <td class="td-checkbox">
+                    <input type="checkbox" :checked="selectedCseIds.has(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx)" @change="toggleCse(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx)" />
+                  </td>
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.name || '—' }}</td>
                   <td class="text-score">{{ r.q1 != null ? r.q1 : '—' }}</td>
@@ -144,15 +156,19 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th :colspan="3 + 13 * 2" class="text-table-head">研究一/环节一选择与打分（创造力评价13题）</th>
+                  <th :colspan="4 + 13 * 2" class="text-table-head">研究一/环节一选择与打分（创造力评价13题）</th>
                 </tr>
                 <tr>
+                  <th class="text-table-head th-checkbox">
+                    <input type="checkbox" :checked="allChoicesSelected" :indeterminate="someChoicesSelected" @change="toggleAllChoices" />
+                  </th>
                   <th class="text-table-head th-sort" @click="toggleSortChoice('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                   <th class="text-table-head">被试姓名</th>
                   <th class="text-table-head">最终提交作品</th>
                   <th v-for="n in 13" :key="n" colspan="2" class="text-table-head">题{{ n }}</th>
                 </tr>
                 <tr>
+                  <th class="text-table-head"></th>
                   <th class="text-table-head"></th>
                   <th class="text-table-head"></th>
                   <th class="text-table-head"></th>
@@ -164,6 +180,9 @@
               </thead>
               <tbody>
                 <tr v-for="r in paginatedChoices" :key="r.subject_id">
+                  <td class="td-checkbox">
+                    <input type="checkbox" :checked="selectedChoiceSubjectIds.has(r.subject_id)" @change="toggleChoice(r.subject_id)" />
+                  </td>
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.name || '—' }}</td>
                   <td>{{ r.chosen || '—' }}</td>
@@ -205,9 +224,17 @@ const sortOrder = ref('asc');
 const page = ref(1);
 const pageSize = 20;
 const selectedPlanIds = ref(new Set());
+const selectedCseIds = ref(new Set());
+const selectedChoiceSubjectIds = ref(new Set());
 
 const allStudy1PlansSelected = computed(() => paginatedPlans.value.length > 0 && paginatedPlans.value.every((r) => selectedPlanIds.value.has(r.id)));
 const someStudy1PlansSelected = computed(() => paginatedPlans.value.some((r) => selectedPlanIds.value.has(r.id)) && !allStudy1PlansSelected.value);
+
+const allCseSelected = computed(() => paginatedCse.value.length > 0 && paginatedCse.value.every((r) => selectedCseIds.value.has(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + 0)));
+const someCseSelected = computed(() => paginatedCse.value.some((r) => selectedCseIds.value.has(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + 0)) && !allCseSelected.value);
+
+const allChoicesSelected = computed(() => paginatedChoices.value.length > 0 && paginatedChoices.value.every((r) => selectedChoiceSubjectIds.value.has(r.subject_id)));
+const someChoicesSelected = computed(() => paginatedChoices.value.some((r) => selectedChoiceSubjectIds.value.has(r.subject_id)) && !allChoicesSelected.value);
 
 function toggleStudy1Plan(id) {
   const set = new Set(selectedPlanIds.value);
@@ -232,6 +259,64 @@ function deleteSelectedStudy1Plans() {
       if (data.ok) {
         selectedPlanIds.value = new Set();
         fetchPlans();
+        fetchChoices();
+      }
+    })
+    .catch(() => {});
+}
+
+function toggleCse(id) {
+  const set = new Set(selectedCseIds.value);
+  if (set.has(id)) set.delete(id);
+  else set.add(id);
+  selectedCseIds.value = set;
+}
+function toggleAllCse() {
+  if (allCseSelected.value) selectedCseIds.value = new Set();
+  else selectedCseIds.value = new Set(paginatedCse.value.map((r, idx) => r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx));
+}
+function deleteSelectedCseData() {
+  if (selectedCseIds.value.size === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedCseIds.value.size} 条CSE量表数据吗？`)) return;
+  // 过滤出有效的数字ID
+  const validIds = [...selectedCseIds.value].filter(id => typeof id === 'number' || !isNaN(Number(id))).map(Number);
+  fetch('/api/admin/study1/cse', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: validIds }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.ok) {
+        selectedCseIds.value = new Set();
+        fetchCse();
+      }
+    })
+    .catch(() => {});
+}
+
+function toggleChoice(subjectId) {
+  const set = new Set(selectedChoiceSubjectIds.value);
+  if (set.has(subjectId)) set.delete(subjectId);
+  else set.add(subjectId);
+  selectedChoiceSubjectIds.value = set;
+}
+function toggleAllChoices() {
+  if (allChoicesSelected.value) selectedChoiceSubjectIds.value = new Set();
+  else selectedChoiceSubjectIds.value = new Set(paginatedChoices.value.map((r) => r.subject_id));
+}
+function deleteSelectedPhase1Choices() {
+  if (selectedChoiceSubjectIds.value.size === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedChoiceSubjectIds.value.size} 条环节一选择与打分记录吗？`)) return;
+  fetch('/api/admin/study1/phase1-choices', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject_ids: [...selectedChoiceSubjectIds.value] }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.ok) {
+        selectedChoiceSubjectIds.value = new Set();
         fetchChoices();
       }
     })
