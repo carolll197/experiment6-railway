@@ -1,6 +1,7 @@
 <template>
   <div class="creative-wrap">
     <div class="timer-bar text-score">{{ timeText }}</div>
+    <div class="timer-note text-hint italic" style="text-align: center; font-size: 12px; margin-bottom: 8px;">倒计时结束将自动保存并提交已填内容</div>
     <div class="two-cols">
       <div class="left-col panel-border">
         <div class="left-top file-container panel-border">
