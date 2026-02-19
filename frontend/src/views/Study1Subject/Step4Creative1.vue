@@ -98,6 +98,8 @@ function onSubmit() {
 }
 
 function submitPlan(isAutoSaved) {
+  if (timer) { clearInterval(timer); timer = null; }
+  if (saveInterval) { clearInterval(saveInterval); saveInterval = null; }
   const payload = {
     subject_id: props.subjectId,
     name: props.name,
@@ -118,16 +120,8 @@ function submitPlan(isAutoSaved) {
     body: JSON.stringify(payload),
   })
     .then((r) => r.json())
-    .then((data) => {
-      if (data.ok) {
-        // 倒计时结束自动提交时直接跳转，不需要用户确认
-        emit('next', { ...form.value });
-      }
-    })
-    .catch(() => {
-      // 即使网络异常也直接跳转，确保用户体验流畅
-      emit('next', { ...form.value });
-    });
+    .then(() => { emit('next', { ...form.value }); })
+    .catch(() => { emit('next', { ...form.value }); });
 }
 
 function onConfirmAutoSaved() {
@@ -149,6 +143,7 @@ onMounted(() => {
     if (remaining.value <= 0) { if (timer) clearInterval(timer); submitPlan(true); }
   }, 1000);
   saveInterval = setInterval(emitSave, 30000);
+  setTimeout(emitSave, 500);
 });
 
 watch(() => ({ ...form.value }), () => { setTimeout(emitSave, 600); }, { deep: true });

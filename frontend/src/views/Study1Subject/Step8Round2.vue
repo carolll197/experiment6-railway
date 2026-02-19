@@ -97,84 +97,17 @@ const remaining = ref(
   init?.timerRemaining != null && init.timerRemaining > 0 && init.timerRemaining <= TOTAL_SEC ? init.timerRemaining : TOTAL_SEC
 );
 let timer = null;
+let countdownTimer = null;
+let saveInterval = null;
 const timeText = computed(() => `剩余${Math.floor(remaining.value / 60)}分${remaining.value % 60}秒`);
 
 const innerStep = ref(init?.innerStep === 1 ? 1 : 0);
 const countdown = ref(init?.countdown != null ? Math.max(0, Number(init.countdown)) : 10);
-let countdownTimer = null;
-let saveInterval = null;
-
-function emitSave() {
-  emit('save', {
-    form: { ...form.value },
-    timerRemaining: remaining.value,
-    innerStep: innerStep.value,
-    countdown: countdown.value,
-    aiSent: aiSent.value,
-    aiDone: aiDone.value,
-  });
-}
-
-onMounted(() => {
-  if (innerStep.value === 0 && (init?.countdown == null || init?.innerStep !== 0)) {
-    countdown.value = 10;
-    countdownTimer = setInterval(() => {
-      if (countdown.value > 0) countdown.value--;
-      else if (countdownTimer) clearInterval(countdownTimer);
-    }, 1000);
-  } else if (innerStep.value === 1 && !timer) {
-    if (init?.timerRemaining != null && init.timerRemaining > 0) remaining.value = init.timerRemaining;
-    else remaining.value = TOTAL_SEC;
-    timer = setInterval(() => {
-      remaining.value--;
-      if (remaining.value <= 0) {
-        remaining.value = 0;
-        if (timer) clearInterval(timer);
-        submitPlan(true);
-      }
-    }, 1000);
-    saveInterval = setInterval(emitSave, 30000);
-  }
-});
-
-watch(innerStep, (val) => {
-  if (val === 1 && !timer) {
-    if (init?.timerRemaining != null && init.timerRemaining > 0) remaining.value = init.timerRemaining;
-    else remaining.value = TOTAL_SEC;
-    timer = setInterval(() => {
-      remaining.value--;
-      if (remaining.value <= 0) {
-        remaining.value = 0;
-        if (timer) clearInterval(timer);
-        submitPlan(true);
-      }
-    }, 1000);
-    if (!saveInterval) saveInterval = setInterval(emitSave, 30000);
-  }
-});
-watch(() => ({ ...form.value }), () => { setTimeout(emitSave, 600); }, { deep: true });
-
-onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearInterval(countdownTimer); if (saveInterval) clearInterval(saveInterval); });
 
 const AI_NODES = ['分析题目及评价维度', '分析产出要求', '构思方案', '生成方案'];
 const aiSent = ref(!!init?.aiSent);
 const aiNodes = ref(init?.aiSent ? [...AI_NODES] : []);
 const aiDone = ref(!!init?.aiDone);
-
-function sendAi() {
-  aiSent.value = true;
-  let i = 0;
-  const addNode = () => {
-    if (i < AI_NODES.length) {
-      aiNodes.value.push(AI_NODES[i]);
-      i++;
-      setTimeout(addNode, 600);
-    } else {
-      aiDone.value = true;
-    }
-  };
-  setTimeout(addNode, 400);
-}
 
 const defaultForm = () => ({ target_audience: '', pain_point: '', insight: '', big_idea: '', rationale: '' });
 const form = ref(init?.form && typeof init.form === 'object' ? { ...defaultForm(), ...init.form } : defaultForm());
@@ -198,16 +131,20 @@ const showFailModal = ref(false);
 const showAutoSavedModal = ref(false);
 const failReason = ref('');
 
-function onSubmit() {
-  const invalid = firstInvalidField();
-  if (invalid) { failReason.value = `${invalid.label}字数至少为20个字`; showFailModal.value = true; return; }
-  submitPlan(false);
+function emitSave() {
+  emit('save', {
+    form: { ...form.value },
+    timerRemaining: remaining.value,
+    innerStep: innerStep.value,
+    countdown: countdown.value,
+    aiSent: aiSent.value,
+    aiDone: aiDone.value,
+  });
 }
 
 function submitPlan(isAutoSaved) {
-  // 先保存状态，确保timerRemaining为0
-  emitSave();
-  
+  if (timer) { clearInterval(timer); timer = null; }
+  if (saveInterval) { clearInterval(saveInterval); saveInterval = null; }
   const payload = {
     subject_id: props.subjectId,
     name: props.name,
@@ -223,19 +160,71 @@ function submitPlan(isAutoSaved) {
   fetch('/api/study1-subject/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     .then((r) => r.json())
     .then((data) => {
-      // 倒计时结束自动提交时直接跳转，不需要用户确认
-      emit('next');
+      if (data.ok) emit('next');
+      else emit('next');
     })
     .catch(() => {
-      // 即使网络异常也直接跳转，确保用户体验流畅
       emit('next');
     });
+}
+
+function onSubmit() {
+  const invalid = firstInvalidField();
+  if (invalid) { failReason.value = `${invalid.label}字数至少为20个字`; showFailModal.value = true; return; }
+  submitPlan(false);
 }
 
 function onConfirmAutoSaved() {
   showAutoSavedModal.value = false;
   emit('next');
 }
+
+function sendAi() {
+  aiSent.value = true;
+  let i = 0;
+  const addNode = () => {
+    if (i < AI_NODES.length) {
+      aiNodes.value.push(AI_NODES[i]);
+      i++;
+      setTimeout(addNode, 600);
+    } else {
+      aiDone.value = true;
+    }
+  };
+  setTimeout(addNode, 400);
+}
+
+onMounted(() => {
+  if (innerStep.value === 0) {
+    if (countdown.value > 0) {
+      countdownTimer = setInterval(() => {
+        if (countdown.value > 0) countdown.value--;
+        else if (countdownTimer) clearInterval(countdownTimer);
+      }, 1000);
+    }
+  } else if (innerStep.value === 1 && !timer) {
+    timer = setInterval(() => {
+      remaining.value--;
+      if (remaining.value <= 0) submitPlan(true);
+    }, 1000);
+    saveInterval = setInterval(emitSave, 30000);
+  }
+  setTimeout(emitSave, 500);
+});
+
+watch(innerStep, (val) => {
+  if (val === 1 && !timer) {
+    timer = setInterval(() => {
+      remaining.value--;
+      if (remaining.value <= 0) submitPlan(true);
+    }, 1000);
+    if (!saveInterval) saveInterval = setInterval(emitSave, 30000);
+    emitSave();
+  }
+});
+watch(() => ({ ...form.value }), () => { setTimeout(emitSave, 600); }, { deep: true });
+
+onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearInterval(countdownTimer); if (saveInterval) clearInterval(saveInterval); });
 </script>
 
 <style scoped>
