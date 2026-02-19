@@ -187,18 +187,13 @@ function submitPlan(isAutoSaved) {
     .then((r) => r.json())
     .then((data) => {
       if (data.ok) {
-        if (isAutoSaved) showAutoSavedModal.value = true;
-        else emit('next');
+        // 倒计时结束自动提交时直接跳转，不需要用户确认
+        emit('next');
       }
     })
     .catch(() => {
-      if (isAutoSaved) {
-        // 即使网络异常也显示自动保存提示，防止用户无反馈
-        showAutoSavedModal.value = true;
-      } else {
-        failReason.value = '网络异常，请检查网络后重试';
-        showFailModal.value = true;
-      }
+      // 即使网络异常也直接跳转，确保用户体验流畅
+      emit('next');
     });
 }
 
