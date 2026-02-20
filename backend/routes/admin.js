@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import XLSX from 'xlsx';
+import { getPrePlansFromExcel, getPrePlanSubjectNames } from '../lib/prePlansExcel.js';
 
 export const adminRouter = Router();
 
@@ -20,38 +21,59 @@ adminRouter.delete('/pre/plans', (req, res) => {
   }
 });
 
-// 预实验 - 被试方案列表（支持筛选）
+// 预实验 - 被试方案列表（来自 materials/预实验被试方案.xlsx，支持 keyword 筛选；专家无效信息仍从 DB 查）
 adminRouter.get('/pre/plans', (req, res) => {
   try {
     const db = req.app.get('db');
     const { keyword } = req.query;
-    let sql = `SELECT * FROM pre_subject_plans WHERE 1=1`;
-    const params = [];
+    let rows = getPrePlansFromExcel();
     if (keyword && String(keyword).trim()) {
-      const k = `%${String(keyword).trim()}%`;
-      sql += ` AND (subject_id LIKE ? OR name LIKE ?)`;
-      params.push(k, k);
+      const k = String(keyword).trim().toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          String(r.subject_id ?? '').toLowerCase().includes(k) ||
+          String(r.name ?? '').toLowerCase().includes(k)
+      );
     }
-    sql += ` ORDER BY id`;
-    const rows = db.prepare(sql).all(...params);
-    res.json(rows);
+    const invalidRows = db.prepare(`SELECT DISTINCT subject_id, expert_name FROM pre_expert_scores WHERE is_invalid = 1`).all();
+    const invalidIds = new Set(invalidRows.map((r) => String(r.subject_id ?? '')));
+    const invalidDetails = {};
+    for (const r of invalidRows) {
+      const sid = String(r.subject_id ?? '');
+      if (!invalidDetails[sid]) invalidDetails[sid] = [];
+      const en = String(r.expert_name ?? '');
+      if (en && !invalidDetails[sid].includes(en)) invalidDetails[sid].push(en);
+    }
+    const out = rows.map((r) => {
+      const sid = String(r.subject_id ?? '');
+      const invalid = invalidIds.has(sid);
+      const names = invalidDetails[sid];
+      return {
+        ...r,
+        expert_marked_invalid: invalid,
+        plan_status: invalid ? '无效' : '有效',
+        invalid_expert_names: names && names.length ? names.join('、') : (invalid ? '—' : '—'),
+      };
+    });
+    res.json(out);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
   }
 });
 
-// 预实验 - 专家评分列表（支持 keyword / dataStatus / expertName；带被试姓名 subject_name）
+// 预实验 - 专家评分列表（支持 keyword / dataStatus / expertName；被试姓名 subject_name 来自 Excel 方案表）
 adminRouter.get('/pre/scores', (req, res) => {
   try {
     const db = req.app.get('db');
+    const nameMap = getPrePlanSubjectNames();
     const { keyword, dataStatus, expertName } = req.query;
     if (dataStatus === 'invalid') {
       const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
       const subjectIds = invalidRows.map((r) => String(r.subject_id ?? '')).filter(Boolean);
       if (subjectIds.length === 0) return res.json([]);
       const placeholders = subjectIds.map(() => '?').join(',');
-      let sql = `SELECT s.*, (SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1) AS subject_name FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
+      let sql = `SELECT s.* FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
       const params = [...subjectIds];
       if (keyword && String(keyword).trim()) {
         const k = `%${String(keyword).trim()}%`;
@@ -64,9 +86,10 @@ adminRouter.get('/pre/scores', (req, res) => {
       }
       sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
       const rows = db.prepare(sql).all(...params);
-      return res.json(rows);
+      const out = rows.map((r) => ({ ...r, subject_name: nameMap[String(r.subject_id ?? '')] ?? '' }));
+      return res.json(out);
     }
-    let sql = `SELECT s.*, (SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1) AS subject_name FROM pre_expert_scores s WHERE 1=1`;
+    let sql = `SELECT s.* FROM pre_expert_scores s WHERE 1=1`;
     const params = [];
     if (keyword && String(keyword).trim()) {
       const k = `%${String(keyword).trim()}%`;
@@ -80,7 +103,8 @@ adminRouter.get('/pre/scores', (req, res) => {
     if (dataStatus === 'valid') sql += ` AND s.is_invalid = 0`;
     sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
     const rows = db.prepare(sql).all(...params);
-    res.json(rows);
+    const out = rows.map((r) => ({ ...r, subject_name: nameMap[String(r.subject_id ?? '')] ?? '' }));
+    res.json(out);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -238,20 +262,20 @@ adminRouter.get('/export/study1-cse', (req, res) => {
   }
 });
 
-// 导出预实验被试方案 Excel（与筛选同步：keyword、dataStatus）
+// 导出预实验被试方案 Excel（来自 Excel 方案表，与筛选同步：keyword、dataStatus）
 adminRouter.get('/export/pre-plans', (req, res) => {
   try {
     const db = req.app.get('db');
     const { keyword, dataStatus } = req.query;
-    let sql = `SELECT * FROM pre_subject_plans WHERE 1=1`;
-    const params = [];
+    let rows = getPrePlansFromExcel();
     if (keyword && String(keyword).trim()) {
-      const k = `%${String(keyword).trim()}%`;
-      sql += ` AND (subject_id LIKE ? OR name LIKE ?)`;
-      params.push(k, k);
+      const k = String(keyword).trim().toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          String(r.subject_id ?? '').toLowerCase().includes(k) ||
+          String(r.name ?? '').toLowerCase().includes(k)
+      );
     }
-    sql += ` ORDER BY id`;
-    let rows = db.prepare(sql).all(...params);
     if (dataStatus === 'valid' || dataStatus === 'invalid') {
       const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
       const invalidIds = new Set(invalidRows.map((r) => String(r.subject_id ?? '')));
@@ -283,28 +307,32 @@ adminRouter.get('/export/pre-plans', (req, res) => {
   }
 });
 
-// 导出预实验专家评分 Excel（与筛选同步：keyword、dataStatus、expertName；含被试姓名）
+// 导出预实验专家评分 Excel（与筛选同步：keyword、dataStatus、expertName；被试姓名来自 Excel 方案表）
 function preScoresRows(db, query) {
   const { keyword, dataStatus, expertName } = query;
+  const nameMap = getPrePlanSubjectNames();
+  let rows = [];
   if (dataStatus === 'invalid') {
     const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
     const subjectIds = invalidRows.map((r) => String(r.subject_id ?? '')).filter(Boolean);
     if (subjectIds.length === 0) return [];
     const placeholders = subjectIds.map(() => '?').join(',');
-    let sql = `SELECT s.*, (SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1) AS subject_name FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
+    let sql = `SELECT s.* FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
     const params = [...subjectIds];
     if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`; params.push(k, k); }
     if (expertName && String(expertName).trim()) { sql += ` AND s.expert_name LIKE ?`; params.push(`%${String(expertName).trim()}%`); }
     sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
-    return db.prepare(sql).all(...params);
+    rows = db.prepare(sql).all(...params);
+  } else {
+    let sql = `SELECT s.* FROM pre_expert_scores s WHERE 1=1`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`; params.push(k, k); }
+    if (expertName && String(expertName).trim()) { sql += ` AND s.expert_name LIKE ?`; params.push(`%${String(expertName).trim()}%`); }
+    if (dataStatus === 'valid') sql += ` AND s.is_invalid = 0`;
+    sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
+    rows = db.prepare(sql).all(...params);
   }
-  let sql = `SELECT s.*, (SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1) AS subject_name FROM pre_expert_scores s WHERE 1=1`;
-  const params = [];
-  if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`; params.push(k, k); }
-  if (expertName && String(expertName).trim()) { sql += ` AND s.expert_name LIKE ?`; params.push(`%${String(expertName).trim()}%`); }
-  if (dataStatus === 'valid') sql += ` AND s.is_invalid = 0`;
-  sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
-  return db.prepare(sql).all(...params);
+  return rows.map((r) => ({ ...r, subject_name: nameMap[String(r.subject_id ?? '')] ?? '' }));
 }
 
 adminRouter.get('/export/pre-scores', (req, res) => {

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { getPrePlansFromExcel } from '../lib/prePlansExcel.js';
 
 export const preExpertRouter = Router();
 
@@ -12,15 +13,26 @@ function nowStr() {
   return new Date().toISOString().slice(0, 19).replace('T', ' ');
 }
 
-// 获取专家评分进度（同一 IP + 同一 visitor_id 可恢复）
+// 解析专家进度 key：优先 expert_name（同姓名即同一位专家），否则用 visitor_id
+function getPreExpertProgressKey(req) {
+  const q = req.query || {};
+  const body = req.body || {};
+  const expertName = (body.expert_name != null ? body.expert_name : q.expert_name) != null
+    ? String(body.expert_name != null ? body.expert_name : q.expert_name).trim()
+    : '';
+  if (expertName) return 'expert-' + expertName;
+  return (req.headers['x-visitor-id'] || body.visitor_id || q.visitor_id || '').trim();
+}
+
+// 获取专家评分进度（支持 expert_name：同姓名专家恢复上次退出位置）
 preExpertRouter.get('/progress', (req, res) => {
   try {
     const db = req.app.get('db');
-    const visitorId = req.headers['x-visitor-id'] || req.query.visitor_id || '';
-    if (!visitorId.trim()) return res.json({});
+    const progressKey = getPreExpertProgressKey(req);
+    if (!progressKey) return res.json({});
     const row = db.prepare(
       'SELECT data_json FROM visitor_progress WHERE visitor_id = ? AND flow = ?'
-    ).get(visitorId.trim(), 'pre-expert');
+    ).get(progressKey, 'pre-expert');
     if (!row) return res.json({});
     let data = {};
     try {
@@ -33,12 +45,12 @@ preExpertRouter.get('/progress', (req, res) => {
   }
 });
 
-// 保存专家评分进度
+// 保存专家评分进度（支持 expert_name：按专家姓名保存，便于再次进入时恢复）
 preExpertRouter.post('/progress', (req, res) => {
   try {
     const db = req.app.get('db');
-    const visitorId = (req.headers['x-visitor-id'] || req.body?.visitor_id || '').trim();
-    if (!visitorId) return res.status(400).json({ error: '缺少 visitor_id' });
+    const progressKey = getPreExpertProgressKey(req);
+    if (!progressKey) return res.status(400).json({ error: '请提供 expert_name 或 visitor_id' });
     const ip = getClientIp(req);
     const { expert_name, current_subject_id, scores, is_invalid } = req.body;
     const dataJson = JSON.stringify({
@@ -53,7 +65,7 @@ preExpertRouter.post('/progress', (req, res) => {
        VALUES (?, 'pre-expert', ?, 0, ?, ?)
        ON CONFLICT(visitor_id, flow) DO UPDATE SET
          ip = excluded.ip, data_json = excluded.data_json, updated_at = excluded.updated_at`,
-      [visitorId, ip, dataJson, updatedAt]
+      [progressKey, ip, dataJson, updatedAt]
     );
     res.json({ ok: true });
   } catch (e) {
@@ -62,16 +74,10 @@ preExpertRouter.post('/progress', (req, res) => {
   }
 });
 
-// 获取待评分方案列表（仅被试编号，不暴露姓名）
+// 获取待评分方案列表（来自 materials/预实验被试方案.xlsx，不读数据库）
 preExpertRouter.get('/plans', (req, res) => {
   try {
-    const db = req.app.get('db');
-    const rows = db
-      .prepare(
-        `SELECT id, subject_id, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved
-         FROM pre_subject_plans ORDER BY id`
-      )
-      .all();
+    const rows = getPrePlansFromExcel();
     res.json(rows);
   } catch (e) {
     console.error(e);
