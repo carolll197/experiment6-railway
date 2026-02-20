@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { getPrePlansFromExcel } from '../lib/prePlansExcel.js';
 
 export const preExpertRouter = Router();
 
@@ -74,10 +73,11 @@ preExpertRouter.post('/progress', (req, res) => {
   }
 });
 
-// 获取待评分方案列表（来自 materials/预实验被试方案.xlsx，不读数据库）
+// 获取待评分方案列表（来自数据库 pre_subject_plans）
 preExpertRouter.get('/plans', (req, res) => {
   try {
-    const rows = getPrePlansFromExcel();
+    const db = req.app.get('db');
+    const rows = db.prepare('SELECT * FROM pre_subject_plans ORDER BY id').all();
     res.json(rows);
   } catch (e) {
     console.error(e);

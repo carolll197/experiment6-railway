@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import XLSX from 'xlsx';
-import { getPrePlansFromExcel, getPrePlanSubjectNames } from '../lib/prePlansExcel.js';
+import { getPrePlansFromExcel } from '../lib/prePlansExcel.js';
 
 export const adminRouter = Router();
+
+function nowStr() {
+  return new Date().toISOString().slice(0, 19).replace('T', ' ');
+}
 
 // 预实验 - 批量删除被试方案（同步：专家版将不再看到这些方案；同时删除其专家评分）
 adminRouter.delete('/pre/plans', (req, res) => {
@@ -21,20 +25,60 @@ adminRouter.delete('/pre/plans', (req, res) => {
   }
 });
 
-// 预实验 - 被试方案列表（来自 materials/预实验被试方案.xlsx，支持 keyword 筛选；专家无效信息仍从 DB 查）
+// 预实验 - 从 Excel 导入方案到 pre_subject_plans（供专家/主试从系统查看）
+adminRouter.post('/pre/import-from-excel', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const rows = getPrePlansFromExcel();
+    if (rows.length === 0) {
+      return res.json({ ok: true, imported: 0, message: 'Excel 中无数据或文件不存在' });
+    }
+    const del = db.prepare('DELETE FROM pre_subject_plans WHERE subject_id = ?');
+    const ins = db.prepare(`
+      INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const submittedAt = nowStr();
+    for (const r of rows) {
+      const subject_id = r.subject_id != null ? String(r.subject_id).trim() : '';
+      if (!subject_id) continue;
+      del.run(subject_id);
+      ins.run(
+        subject_id,
+        r.name ?? '',
+        r.target_audience ?? '',
+        r.pain_point ?? '',
+        r.insight ?? '',
+        r.big_idea ?? '',
+        r.rationale ?? '',
+        r.submitted_at || submittedAt,
+        r.is_auto_saved ? 1 : 0,
+        r.submitted_at || submittedAt,
+        r.start_time || r.submitted_at || submittedAt,
+        r.end_time || r.submitted_at || submittedAt
+      );
+    }
+    res.json({ ok: true, imported: rows.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 预实验 - 被试方案列表（来自数据库 pre_subject_plans，支持 keyword 筛选；专家无效信息从 DB 查）
 adminRouter.get('/pre/plans', (req, res) => {
   try {
     const db = req.app.get('db');
     const { keyword } = req.query;
-    let rows = getPrePlansFromExcel();
+    let sql = `SELECT * FROM pre_subject_plans WHERE 1=1`;
+    const params = [];
     if (keyword && String(keyword).trim()) {
-      const k = String(keyword).trim().toLowerCase();
-      rows = rows.filter(
-        (r) =>
-          String(r.subject_id ?? '').toLowerCase().includes(k) ||
-          String(r.name ?? '').toLowerCase().includes(k)
-      );
+      const k = `%${String(keyword).trim()}%`;
+      sql += ` AND (subject_id LIKE ? OR name LIKE ?)`;
+      params.push(k, k);
     }
+    sql += ` ORDER BY id`;
+    const rows = db.prepare(sql).all(...params);
     const invalidRows = db.prepare(`SELECT DISTINCT subject_id, expert_name FROM pre_expert_scores WHERE is_invalid = 1`).all();
     const invalidIds = new Set(invalidRows.map((r) => String(r.subject_id ?? '')));
     const invalidDetails = {};
@@ -62,18 +106,18 @@ adminRouter.get('/pre/plans', (req, res) => {
   }
 });
 
-// 预实验 - 专家评分列表（支持 keyword / dataStatus / expertName；被试姓名 subject_name 来自 Excel 方案表）
+// 预实验 - 专家评分列表（支持 keyword / dataStatus / expertName；被试姓名 subject_name 来自 pre_subject_plans）
 adminRouter.get('/pre/scores', (req, res) => {
   try {
     const db = req.app.get('db');
-    const nameMap = getPrePlanSubjectNames();
     const { keyword, dataStatus, expertName } = req.query;
+    const nameSubquery = `(SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1)`;
     if (dataStatus === 'invalid') {
       const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
       const subjectIds = invalidRows.map((r) => String(r.subject_id ?? '')).filter(Boolean);
       if (subjectIds.length === 0) return res.json([]);
       const placeholders = subjectIds.map(() => '?').join(',');
-      let sql = `SELECT s.* FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
+      let sql = `SELECT s.*, ${nameSubquery} AS subject_name FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
       const params = [...subjectIds];
       if (keyword && String(keyword).trim()) {
         const k = `%${String(keyword).trim()}%`;
@@ -86,10 +130,9 @@ adminRouter.get('/pre/scores', (req, res) => {
       }
       sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
       const rows = db.prepare(sql).all(...params);
-      const out = rows.map((r) => ({ ...r, subject_name: nameMap[String(r.subject_id ?? '')] ?? '' }));
-      return res.json(out);
+      return res.json(rows.map((r) => ({ ...r, subject_name: r.subject_name ?? '' })));
     }
-    let sql = `SELECT s.* FROM pre_expert_scores s WHERE 1=1`;
+    let sql = `SELECT s.*, ${nameSubquery} AS subject_name FROM pre_expert_scores s WHERE 1=1`;
     const params = [];
     if (keyword && String(keyword).trim()) {
       const k = `%${String(keyword).trim()}%`;
@@ -103,8 +146,7 @@ adminRouter.get('/pre/scores', (req, res) => {
     if (dataStatus === 'valid') sql += ` AND s.is_invalid = 0`;
     sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
     const rows = db.prepare(sql).all(...params);
-    const out = rows.map((r) => ({ ...r, subject_name: nameMap[String(r.subject_id ?? '')] ?? '' }));
-    res.json(out);
+    res.json(rows.map((r) => ({ ...r, subject_name: r.subject_name ?? '' })));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -262,20 +304,20 @@ adminRouter.get('/export/study1-cse', (req, res) => {
   }
 });
 
-// 导出预实验被试方案 Excel（来自 Excel 方案表，与筛选同步：keyword、dataStatus）
+// 导出预实验被试方案 Excel（来自数据库 pre_subject_plans，与筛选同步：keyword、dataStatus）
 adminRouter.get('/export/pre-plans', (req, res) => {
   try {
     const db = req.app.get('db');
     const { keyword, dataStatus } = req.query;
-    let rows = getPrePlansFromExcel();
+    let sql = `SELECT * FROM pre_subject_plans WHERE 1=1`;
+    const params = [];
     if (keyword && String(keyword).trim()) {
-      const k = String(keyword).trim().toLowerCase();
-      rows = rows.filter(
-        (r) =>
-          String(r.subject_id ?? '').toLowerCase().includes(k) ||
-          String(r.name ?? '').toLowerCase().includes(k)
-      );
+      const k = `%${String(keyword).trim()}%`;
+      sql += ` AND (subject_id LIKE ? OR name LIKE ?)`;
+      params.push(k, k);
     }
+    sql += ` ORDER BY id`;
+    let rows = db.prepare(sql).all(...params);
     if (dataStatus === 'valid' || dataStatus === 'invalid') {
       const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
       const invalidIds = new Set(invalidRows.map((r) => String(r.subject_id ?? '')));
@@ -310,21 +352,21 @@ adminRouter.get('/export/pre-plans', (req, res) => {
 // 导出预实验专家评分 Excel（与筛选同步：keyword、dataStatus、expertName；被试姓名来自 Excel 方案表）
 function preScoresRows(db, query) {
   const { keyword, dataStatus, expertName } = query;
-  const nameMap = getPrePlanSubjectNames();
+  const nameSubquery = `(SELECT name FROM pre_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1)`;
   let rows = [];
   if (dataStatus === 'invalid') {
     const invalidRows = db.prepare(`SELECT DISTINCT subject_id FROM pre_expert_scores WHERE is_invalid = 1`).all();
     const subjectIds = invalidRows.map((r) => String(r.subject_id ?? '')).filter(Boolean);
     if (subjectIds.length === 0) return [];
     const placeholders = subjectIds.map(() => '?').join(',');
-    let sql = `SELECT s.* FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
+    let sql = `SELECT s.*, ${nameSubquery} AS subject_name FROM pre_expert_scores s WHERE s.subject_id IN (${placeholders})`;
     const params = [...subjectIds];
     if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`; params.push(k, k); }
     if (expertName && String(expertName).trim()) { sql += ` AND s.expert_name LIKE ?`; params.push(`%${String(expertName).trim()}%`); }
     sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
     rows = db.prepare(sql).all(...params);
   } else {
-    let sql = `SELECT s.* FROM pre_expert_scores s WHERE 1=1`;
+    let sql = `SELECT s.*, ${nameSubquery} AS subject_name FROM pre_expert_scores s WHERE 1=1`;
     const params = [];
     if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`; params.push(k, k); }
     if (expertName && String(expertName).trim()) { sql += ` AND s.expert_name LIKE ?`; params.push(`%${String(expertName).trim()}%`); }
@@ -332,7 +374,7 @@ function preScoresRows(db, query) {
     sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
     rows = db.prepare(sql).all(...params);
   }
-  return rows.map((r) => ({ ...r, subject_name: nameMap[String(r.subject_id ?? '')] ?? '' }));
+  return rows.map((r) => ({ ...r, subject_name: r.subject_name ?? '' }));
 }
 
 adminRouter.get('/export/pre-scores', (req, res) => {
