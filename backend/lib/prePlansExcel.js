@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const excelPath = path.join(__dirname, '..', '..', 'materials', '预实验被试方案.xlsx');
+console.log('[prePlansExcel] Excel path:', excelPath);
 
 const COL = {
   被试编号: 'subject_id',

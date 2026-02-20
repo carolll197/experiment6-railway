@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { initDb, getDb } from './db.js';
+import { getPrePlansFromExcel } from './lib/prePlansExcel.js';
 import { preSubjectRouter } from './routes/pre-subject.js';
 import { preExpertRouter } from './routes/pre-expert.js';
 import { study1SubjectRouter } from './routes/study1-subject.js';
@@ -32,6 +33,42 @@ async function start() {
   await initDb();
   const db = getDb();
   app.set('db', db);
+
+  // 启动时自动从 Excel 导入预实验方案，覆盖旧数据
+  try {
+    const excelRows = getPrePlansFromExcel();
+    if (excelRows.length > 0) {
+      db.run('DELETE FROM pre_subject_plans', []);
+      const ins = db.prepare(`
+        INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      for (const r of excelRows) {
+        const sid = r.subject_id != null ? String(r.subject_id).trim() : '';
+        if (!sid) continue;
+        ins.run(
+          sid,
+          r.name ?? '',
+          r.target_audience ?? '',
+          r.pain_point ?? '',
+          r.insight ?? '',
+          r.big_idea ?? '',
+          r.rationale ?? '',
+          r.submitted_at || now,
+          r.is_auto_saved ? 1 : 0,
+          r.submitted_at || now,
+          r.start_time || r.submitted_at || now,
+          r.end_time || r.submitted_at || now
+        );
+      }
+      console.log('[start] 已从 Excel 导入 %d 条预实验方案到 pre_subject_plans', excelRows.length);
+    } else {
+      console.log('[start] 未找到预实验方案 Excel 或文件为空，跳过导入');
+    }
+  } catch (e) {
+    console.error('[start] Excel 导入失败:', e.message);
+  }
 
   app.use('/api/pre-subject', preSubjectRouter);
   app.use('/api/pre-expert', preExpertRouter);
