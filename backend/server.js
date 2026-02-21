@@ -34,10 +34,11 @@ async function start() {
   const db = getDb();
   app.set('db', db);
 
-  // 启动时自动从 Excel 导入预实验方案，覆盖旧数据
+  // 启动时自动从 Excel 导入预实验方案，覆盖旧数据；同时清空预实验专家评分，避免遗留的无效标记和旧分数
   try {
     const excelRows = getPrePlansFromExcel();
     if (excelRows.length > 0) {
+      db.run('DELETE FROM pre_expert_scores', []);
       db.run('DELETE FROM pre_subject_plans', []);
       const ins = db.prepare(`
         INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
