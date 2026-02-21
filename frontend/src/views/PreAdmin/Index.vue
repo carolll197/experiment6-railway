@@ -10,7 +10,10 @@
           <a :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
           <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanSubjectIds.size === 0" @click="deleteSelectedPrePlans">删除选中方案</button>
         </template>
-        <a v-else :href="exportScoresUrlWithFilter" class="btn-primary" download>导出专家评分</a>
+        <template v-else>
+          <a :href="exportScoresUrlWithFilter" class="btn-primary" download>导出专家评分</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedScoreIds.size === 0" @click="deleteSelectedPreScores">删除选中评分</button>
+        </template>
       </div>
     </header>
     <div class="main-grid">
@@ -104,9 +107,12 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th colspan="7" class="text-table-head">预实验/专家评分</th>
+                  <th colspan="8" class="text-table-head">预实验/专家评分</th>
                 </tr>
                 <tr>
+                  <th class="text-table-head th-checkbox">
+                    <input type="checkbox" :checked="allScoresSelected" :indeterminate="someScoresSelected" @change="toggleAllPreScores" />
+                  </th>
                   <th v-for="c in scoreColumns" :key="c.key" class="text-table-head th-sort" @click="sortScoreBy(c.key)">
                     {{ c.label }}
                     <span v-if="sortKey === c.key" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
@@ -115,6 +121,9 @@
               </thead>
               <tbody>
                 <tr v-for="r in paginatedScores" :key="r.id">
+                  <td class="td-checkbox">
+                    <input type="checkbox" :checked="selectedScoreIds.has(r.id)" @change="togglePreScore(r.id)" />
+                  </td>
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.subject_name || '—' }}</td>
                   <td>{{ r.expert_name }}</td>
@@ -158,10 +167,13 @@ const sortOrder = ref('asc');
 const page = ref(1);
 const pageSize = 20;
 const selectedPlanSubjectIds = ref(new Set());
+const selectedScoreIds = ref(new Set());
 const importingPrePlans = ref(false);
 
 const allPlansSelected = computed(() => paginatedPlans.value.length > 0 && paginatedPlans.value.every((r) => selectedPlanSubjectIds.value.has(r.subject_id)));
 const somePlansSelected = computed(() => paginatedPlans.value.some((r) => selectedPlanSubjectIds.value.has(r.subject_id)) && !allPlansSelected.value);
+const allScoresSelected = computed(() => paginatedScores.value.length > 0 && paginatedScores.value.every((r) => selectedScoreIds.value.has(r.id)));
+const someScoresSelected = computed(() => paginatedScores.value.some((r) => selectedScoreIds.value.has(r.id)) && !allScoresSelected.value);
 
 function togglePrePlan(subjectId) {
   const set = new Set(selectedPlanSubjectIds.value);
@@ -172,6 +184,36 @@ function togglePrePlan(subjectId) {
 function toggleAllPrePlans() {
   if (allPlansSelected.value) selectedPlanSubjectIds.value = new Set();
   else selectedPlanSubjectIds.value = new Set(paginatedPlans.value.map((r) => r.subject_id));
+}
+function togglePreScore(id) {
+  const set = new Set(selectedScoreIds.value);
+  if (set.has(id)) set.delete(id);
+  else set.add(id);
+  selectedScoreIds.value = set;
+}
+function toggleAllPreScores() {
+  if (allScoresSelected.value) selectedScoreIds.value = new Set();
+  else selectedScoreIds.value = new Set(paginatedScores.value.map((r) => r.id));
+}
+function deleteSelectedPreScores() {
+  if (selectedScoreIds.value.size === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedScoreIds.value.size} 条专家评分记录吗？`)) return;
+  fetch('/api/admin/pre/scores', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [...selectedScoreIds.value] }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.ok) {
+        selectedScoreIds.value = new Set();
+        fetchScores();
+        fetchExpertInvalidSubjects();
+      } else {
+        alert(data.error || '删除失败');
+      }
+    })
+    .catch(() => {});
 }
 function deleteSelectedPrePlans() {
   if (selectedPlanSubjectIds.value.size === 0) return;

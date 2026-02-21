@@ -153,6 +153,22 @@ adminRouter.get('/pre/scores', (req, res) => {
   }
 });
 
+// 预实验 - 批量删除专家评分（按评分记录 id 删除）
+adminRouter.delete('/pre/scores', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM pre_expert_scores WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 预实验 - 被专家标记为无效的被试及标注者（用于被试方案表展示：方案状态 + 哪个专家标注）
 adminRouter.get('/pre/expert-invalid-subjects', (req, res) => {
   try {
