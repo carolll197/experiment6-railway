@@ -6,7 +6,6 @@
       <div class="left-col panel-border">
         <div class="left-top file-container panel-border">
           <h2 class="brief-eval-section-title">创意简报</h2>
-          <p class="text-hint" style="margin: 8px 0;">“现象观察”仅用于激活思路，不要求参考，更不必全部参考。请按照右侧的产出要求进行撰写并填空。</p>
           <BriefContent :content="briefQuestion1" />
         </div>
         <div class="left-bottom file-container panel-border">
@@ -17,7 +16,7 @@
       <div class="right-col panel-border">
         <div class="module panel-border" v-for="(m, i) in modules" :key="i" :class="{ 'module-big': m.big }">
           <h2 class="text-h2" style="font-weight: 400;">{{ m.title }} <span class="text-label">{{ m.lengthHint }}</span></h2>
-          <p class="text-hint" style="margin: 6px 0;" v-html="m.hint"></p>
+          <p class="module-hint" style="margin: 6px 0;" v-html="m.hint"></p>
           <BaseTextArea
             v-model="form[m.key]"
             :placeholder="m.placeholder"
@@ -97,7 +96,7 @@ const modules = [
     title: '模块1：核心创意点与比喻（The Big Idea & Metaphor）',
     lengthHint: '至少30字',
     minLength: 30,
-    hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="text-label">思维发散提示：</span>你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。',
+    hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="hint-label">思维发散提示：</span><span class="hint-content">你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。</span>',
     placeholder: '',
     big: true,
   },
@@ -106,7 +105,7 @@ const modules = [
     title: '模块2：高光画面描述（The Highlight Scene）',
     lengthHint: '至少30字',
     minLength: 30,
-    hint: '如果这是一支视频广告，请描绘其中最精彩、最抓人眼球的那一幕画面。<br/><span class="text-label">画面丰富度提示：</span>请尽量调动观众的多重感官！补充丰富的视觉细节（如：冷暖光影、特写镜头、极具反差的色彩）、听觉细节（如：特殊的音效、背景音乐、环境音）以及角色的细微动作或表情。细节越丰满、戏剧张力越强越好！',
+    hint: '如果这是一支视频广告，请描绘其中最精彩、最抓人眼球的那一幕画面。<br/><span class="hint-label">画面丰富度提示：</span><span class="hint-content">请尽量调动观众的多重感官！补充丰富的视觉细节（如：冷暖光影、特写镜头、极具反差的色彩）、听觉细节（如：特殊的音效、背景音乐、环境音）以及角色的细微动作或表情。细节越丰满、戏剧张力越强越好！</span>',
     placeholder: '',
     big: true,
   },
@@ -115,7 +114,7 @@ const modules = [
     title: '模块3：主打广告语（The Slogan）',
     lengthHint: '无最低字数限制',
     minLength: 0,
-    hint: '请为你的广告写一句作为结尾的"点睛之笔"（一句话广告语）。<br/><span class="text-label">金句提示：</span>不需要像传统的促销口号，它可以是一句极具态度的宣言、一个充满画面感的神级反转，或者一句直击灵魂的感叹。',
+    hint: '请为你的广告写一句作为结尾的"点睛之笔"（一句话广告语）。<br/><span class="hint-label">金句提示：</span><span class="hint-content">不需要像传统的促销口号，它可以是一句极具态度的宣言、一个充满画面感的神级反转，或者一句直击灵魂的感叹。</span>',
     placeholder: '',
     big: false,
   },
@@ -297,6 +296,10 @@ onUnmounted(() => {
 .brief-text {
   white-space: pre-wrap;
 }
+/* 产出模块：说明不斜体，提示小标题加粗，提示内容斜体 */
+.module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; }
+.module-hint :deep(.hint-label) { font-weight: 700; }
+.module-hint :deep(.hint-content) { font-style: italic; }
 .btn-row {
   margin-top: 24px;
   padding: 8px 0;

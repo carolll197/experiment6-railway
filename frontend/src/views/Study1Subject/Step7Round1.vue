@@ -6,7 +6,6 @@
       <p class="text-hint center" style="margin: 16px 0;">目前为"第1题（共两题）"，每道题目您均有10分钟时间作答。产出要求同环节一。</p>
       <div class="file-container panel-border brief-block">
         <h2 class="brief-eval-section-title">创意简报</h2>
-        <p class="text-hint" style="margin: 8px 0;">"现象观察"仅用于激活思路，不要求参考，更不必全部参考。</p>
         <BriefContent :content="briefQuestion2Full" />
       </div>
       <div class="file-container panel-border eval-block">
@@ -24,7 +23,6 @@
         <div class="left-col panel-border">
           <div class="left-top file-container panel-border">
             <h2 class="brief-eval-section-title">创意简报</h2>
-            <p class="text-hint" style="margin: 8px 0;">"现象观察"仅用于激活思路，不要求参考，更不必全部参考。</p>
             <BriefContent :content="briefQuestion2Full" />
             <h2 class="brief-eval-section-title spacing-12">评价维度</h2>
             <EvalDimension />
@@ -56,7 +54,7 @@
         <div class="right-col panel-border">
           <div class="module panel-border" v-for="(m, i) in modules" :key="i" :class="{ 'module-big': m.big }">
             <h2 class="text-h2" style="font-weight: 400;">{{ m.title }} <span class="text-label">{{ m.lengthHint }}</span></h2>
-            <p class="text-hint" style="margin: 6px 0;" v-html="m.hint"></p>
+            <p class="module-hint" style="margin: 6px 0;" v-html="m.hint"></p>
             <BaseTextArea v-model="form[m.key]" :placeholder="m.placeholder" show-count :min-length="m.minLength" />
           </div>
           <div class="btn-row">
@@ -112,9 +110,9 @@ const aiDone = ref(!!init?.aiDone);
 const defaultForm = () => ({ big_idea: '', highlight_scene: '', slogan: '' });
 const form = ref(init?.form && typeof init.form === 'object' ? { ...defaultForm(), ...init.form } : defaultForm());
 const modules = [
-  { key: 'big_idea', title: '模块1：核心创意点与比喻（The Big Idea & Metaphor）', lengthHint: '至少30字', minLength: 30, hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="text-label">思维发散提示：</span>你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。', placeholder: '', big: true },
-  { key: 'highlight_scene', title: '模块2：高光画面描述（The Highlight Scene）', lengthHint: '至少30字', minLength: 30, hint: '如果这是一支视频广告，请描绘其中最精彩、最抓人眼球的那一幕画面。<br/><span class="text-label">画面丰富度提示：</span>请尽量调动观众的多重感官！补充丰富的视觉细节（如：冷暖光影、特写镜头、极具反差的色彩）、听觉细节（如：特殊的音效、背景音乐、环境音）以及角色的细微动作或表情。细节越丰满、戏剧张力越强越好！', placeholder: '', big: true },
-  { key: 'slogan', title: '模块3：主打广告语（The Slogan）', lengthHint: '无最低字数限制', minLength: 0, hint: '请为你的广告写一句作为结尾的"点睛之笔"（一句话广告语）。<br/><span class="text-label">金句提示：</span>不需要像传统的促销口号，它可以是一句极具态度的宣言、一个充满画面感的神级反转，或者一句直击灵魂的感叹。', placeholder: '', big: false },
+  { key: 'big_idea', title: '模块1：核心创意点与比喻（The Big Idea & Metaphor）', lengthHint: '至少30字', minLength: 30, hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="hint-label">思维发散提示：</span><span class="hint-content">你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。</span>', placeholder: '', big: true },
+  { key: 'highlight_scene', title: '模块2：高光画面描述（The Highlight Scene）', lengthHint: '至少30字', minLength: 30, hint: '如果这是一支视频广告，请描绘其中最精彩、最抓人眼球的那一幕画面。<br/><span class="hint-label">画面丰富度提示：</span><span class="hint-content">请尽量调动观众的多重感官！补充丰富的视觉细节（如：冷暖光影、特写镜头、极具反差的色彩）、听觉细节（如：特殊的音效、背景音乐、环境音）以及角色的细微动作或表情。细节越丰满、戏剧张力越强越好！</span>', placeholder: '', big: true },
+  { key: 'slogan', title: '模块3：主打广告语（The Slogan）', lengthHint: '无最低字数限制', minLength: 0, hint: '请为你的广告写一句作为结尾的"点睛之笔"（一句话广告语）。<br/><span class="hint-label">金句提示：</span><span class="hint-content">不需要像传统的促销口号，它可以是一句极具态度的宣言、一个充满画面感的神级反转，或者一句直击灵魂的感叹。</span>', placeholder: '', big: false },
 ];
 
 const MIN_LEN = 30;
@@ -258,5 +256,8 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearIn
 .module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; }
 .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
 .module-big :deep(textarea) { min-height: 140px; }
+.module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; }
+.module-hint :deep(.hint-label) { font-weight: 700; }
+.module-hint :deep(.hint-content) { font-style: italic; }
 @media (max-width: 900px) { .collab-wrap .two-cols { grid-template-columns: 1fr; } }
 </style>
