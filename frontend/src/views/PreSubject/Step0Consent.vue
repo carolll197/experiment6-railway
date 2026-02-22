@@ -83,6 +83,8 @@ defineEmits(['next']);
 }
 .checkbox-row {
   margin: 20px 0;
+  display: flex;
+  justify-content: center;
 }
 .btn-row {
   display: flex;

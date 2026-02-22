@@ -1,5 +1,5 @@
 /**
- * 预实验被试方案：从 materials/预实验被试方案.xlsx 读取（三栏：核心创意点与比喻、高光画面描述、主打广告语），供主试端「从 Excel 导入」覆盖数据
+ * 预实验被试方案：从 materials/预实验被试方案.xlsx 读取（三栏：核心创意点与设定、高光画面描述、主打广告语），供主试端「从 Excel 导入」覆盖数据
  */
 import XLSX from 'xlsx';
 import path from 'path';
@@ -16,7 +16,7 @@ function parseBool(v) {
 
 /**
  * 读取 Excel，返回与 pre_subject_plans 表三栏一致的行（subject_id, name, big_idea, highlight_scene, slogan, submitted_at, is_auto_saved 等）
- * Excel 列名：被试编号、被试姓名、核心创意点与比喻、高光画面描述、主打广告语、提交时间、是否自动保存
+ * Excel 列名：被试编号、被试姓名、核心创意点与设定、高光画面描述、主打广告语、提交时间、是否自动保存
  */
 export function getPrePlansFromExcel() {
   try {
@@ -34,7 +34,7 @@ export function getPrePlansFromExcel() {
         id: i + 1,
         subject_id,
         name,
-        big_idea: row['核心创意点与比喻'] != null ? String(row['核心创意点与比喻']) : (row['核心创意'] != null ? String(row['核心创意']) : ''),
+        big_idea: row['核心创意点与设定'] != null ? String(row['核心创意点与设定']) : (row['核心创意'] != null ? String(row['核心创意']) : ''),
         highlight_scene: row['高光画面描述'] != null ? String(row['高光画面描述']) : '',
         slogan: row['主打广告语'] != null ? String(row['主打广告语']) : '',
         submitted_at,

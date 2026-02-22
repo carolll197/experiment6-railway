@@ -93,7 +93,7 @@ const form = ref({ ...defaultForm() });
 const modules = [
   {
     key: 'big_idea',
-    title: '模块1：核心创意点与比喻（The Big Idea & Metaphor）',
+    title: '模块1：核心创意点与设定（The Big Idea）',
     lengthHint: '至少50字',
     minLength: 50,
     hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="hint-label">思维发散提示：</span><span class="hint-content">你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。</span>',
@@ -122,7 +122,7 @@ const modules = [
 
 const MIN_LEN = 30;
 const labels = {
-  big_idea: '核心创意点与比喻',
+  big_idea: '核心创意点与设定',
   highlight_scene: '高光画面描述',
   slogan: '主打广告语',
 };

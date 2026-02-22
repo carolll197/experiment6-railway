@@ -328,7 +328,7 @@ const planColumns = [
   { key: 'name', label: '被试姓名' },
   { key: 'phase', label: '创作环节' },
   { key: 'question_no', label: '题号' },
-  { key: 'big_idea', label: '核心创意点与比喻' },
+  { key: 'big_idea', label: '核心创意点与设定' },
   { key: 'highlight_scene', label: '高光画面描述' },
   { key: 'slogan', label: '主打广告语' },
   { key: 'start_time', label: '开始时间' },

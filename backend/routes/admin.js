@@ -308,7 +308,7 @@ adminRouter.get('/export/pre-plans', (req, res) => {
       rows.map((r) => ({
         被试编号: r.subject_id,
         被试姓名: r.name,
-        核心创意点与比喻: r.big_idea,
+        核心创意点与设定: r.big_idea,
         高光画面描述: r.highlight_scene,
         主打广告语: r.slogan,
         提交时间: r.submitted_at,
@@ -416,7 +416,7 @@ adminRouter.get('/export/study1-plans', (req, res) => {
         姓名: r.name,
         创作环节: r.phase,
         题号: r.question_no,
-        核心创意点与比喻: r.big_idea,
+        核心创意点与设定: r.big_idea,
         高光画面描述: r.highlight_scene,
         主打广告语: r.slogan,
         提交时间: r.submitted_at,

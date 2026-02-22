@@ -40,12 +40,12 @@ export const study1AiWork = {
 };
 
 // 研究二AI建议-题目2（环节二第一轮 AI 对话框内容）- 三栏占位
-export const aiSuggestionQuestion2 = `模块1：核心创意点与比喻（待更新）
+export const aiSuggestionQuestion2 = `模块1：核心创意点与设定（待更新）
 模块2：高光画面描述（待更新）
 模块3：主打广告语（待更新）`;
 
 // 研究二AI建议-题目3（环节二第二轮 AI 对话框内容）- 三栏占位
-export const aiSuggestionQuestion3 = `模块1：核心创意点与比喻（待更新）
+export const aiSuggestionQuestion3 = `模块1：核心创意点与设定（待更新）
 模块2：高光画面描述（待更新）
 模块3：主打广告语（待更新）`;
 

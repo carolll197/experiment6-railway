@@ -26,7 +26,7 @@
       <div class="file-container panel-border work-col" :style="{ order: leftFirst ? 1 : 2 }">
         <h2 class="text-h2 center work-label">{{ leftLabel }}</h2>
         <div class="work-blocks text-body">
-          <p><strong>核心创意点与比喻</strong></p>
+          <p><strong>核心创意点与设定</strong></p>
           <p class="work-text">{{ leftWork.big_idea || '—' }}</p>
           <p style="margin-top: 6px;"><strong>高光画面描述</strong></p>
           <p class="work-text">{{ leftWork.highlight_scene || '—' }}</p>
@@ -37,7 +37,7 @@
       <div class="file-container panel-border work-col" :style="{ order: leftFirst ? 2 : 1 }">
         <h2 class="text-h2 center work-label">{{ rightLabel }}</h2>
         <div class="work-blocks text-body">
-          <p><strong>核心创意点与比喻</strong></p>
+          <p><strong>核心创意点与设定</strong></p>
           <p class="work-text">{{ rightWork.big_idea || '—' }}</p>
           <p style="margin-top: 6px;"><strong>高光画面描述</strong></p>
           <p class="work-text">{{ rightWork.highlight_scene || '—' }}</p>

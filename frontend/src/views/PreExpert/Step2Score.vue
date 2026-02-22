@@ -12,7 +12,7 @@
           <div class="text-score counter">{{ currentIndex + 1 }}/{{ plans.length }}</div>
           <h3 class="text-h3" style="margin: 8px 0;">被试编号：{{ currentPlan ? currentPlan.subject_id : '—' }}</h3>
           <div v-if="currentPlan" class="plan-blocks text-body">
-            <p><strong>核心创意点与比喻</strong></p>
+            <p><strong>核心创意点与设定</strong></p>
             <p class="plan-text">{{ currentPlan.big_idea || '—' }}</p>
             <p style="margin-top: 6px;"><strong>高光画面描述</strong></p>
             <p class="plan-text">{{ currentPlan.highlight_scene || '—' }}</p>
