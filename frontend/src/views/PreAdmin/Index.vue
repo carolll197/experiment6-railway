@@ -4,9 +4,6 @@
       <h1 class="text-h1 left">广告创意研究实验数据管理平台（预实验）</h1>
       <div class="top-actions">
         <template v-if="filters.dataType === 'plans'">
-          <button type="button" class="btn-primary" :disabled="importingPrePlans" @click="importPrePlansFromExcel">
-            {{ importingPrePlans ? '导入中…' : '从 Excel 导入' }}
-          </button>
           <a :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
           <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanSubjectIds.size === 0" @click="deleteSelectedPrePlans">删除选中方案</button>
         </template>
@@ -166,7 +163,6 @@ const page = ref(1);
 const pageSize = 20;
 const selectedPlanSubjectIds = ref(new Set());
 const selectedScoreIds = ref(new Set());
-const importingPrePlans = ref(false);
 
 const allPlansSelected = computed(() => paginatedPlans.value.length > 0 && paginatedPlans.value.every((r) => selectedPlanSubjectIds.value.has(r.subject_id)));
 const somePlansSelected = computed(() => paginatedPlans.value.some((r) => selectedPlanSubjectIds.value.has(r.subject_id)) && !allPlansSelected.value);
@@ -230,24 +226,6 @@ function deleteSelectedPrePlans() {
       }
     })
     .catch(() => {});
-}
-
-function importPrePlansFromExcel() {
-  if (importingPrePlans.value) return;
-  importingPrePlans.value = true;
-  fetch('/api/admin/pre/import-from-excel', { method: 'POST' })
-    .then((r) => r.json())
-    .then((data) => {
-      if (data.ok) {
-        alert(data.imported != null ? `已从 materials/预实验被试方案.xlsx 导入 ${data.imported} 条方案，专家端可立即查看。` : (data.message || '导入完成。'));
-        fetchPlans();
-        fetchExpertInvalidSubjects();
-      } else {
-        alert(data.error || '导入失败');
-      }
-    })
-    .catch((e) => alert('导入请求失败：' + (e && e.message ? e.message : '网络错误')))
-    .finally(() => { importingPrePlans.value = false; });
 }
 
 const planColumns = [

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import XLSX from 'xlsx';
-import { getPrePlansFromExcel } from '../lib/prePlansExcel.js';
 
 export const adminRouter = Router();
 
@@ -25,42 +24,9 @@ adminRouter.delete('/pre/plans', (req, res) => {
   }
 });
 
-// 预实验 - 从 Excel 导入方案到 pre_subject_plans（供专家/主试从系统查看）
+// 预实验 - 专家评分仅使用被试端提交的数据，不再支持从 Excel 导入覆盖
 adminRouter.post('/pre/import-from-excel', (req, res) => {
-  try {
-    const db = req.app.get('db');
-    const rows = getPrePlansFromExcel();
-    if (rows.length === 0) {
-      return res.json({ ok: true, imported: 0, message: 'Excel 中无数据或文件不存在' });
-    }
-    const del = db.prepare('DELETE FROM pre_subject_plans WHERE subject_id = ?');
-    const ins = db.prepare(`
-      INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, highlight_scene, slogan, submitted_at, is_auto_saved, created_at, start_time, end_time)
-      VALUES (?, ?, '', '', '', ?, '', ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const submittedAt = nowStr();
-    for (const r of rows) {
-      const subject_id = r.subject_id != null ? String(r.subject_id).trim() : '';
-      if (!subject_id) continue;
-      del.run(subject_id);
-      ins.run(
-        subject_id,
-        r.name ?? '',
-        r.big_idea ?? '',
-        r.highlight_scene ?? '',
-        r.slogan ?? '',
-        r.submitted_at || submittedAt,
-        r.is_auto_saved ? 1 : 0,
-        r.submitted_at || submittedAt,
-        r.start_time || r.submitted_at || submittedAt,
-        r.end_time || r.submitted_at || submittedAt
-      );
-    }
-    res.json({ ok: true, imported: rows.length });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: e.message });
-  }
+  res.status(400).json({ ok: false, error: '专家评分仅使用被试端提交的数据，不再支持从 Excel 导入。请由被试通过系统提交方案。' });
 });
 
 // 预实验 - 被试方案列表（来自数据库 pre_subject_plans，支持 keyword 筛选；专家无效信息从 DB 查）

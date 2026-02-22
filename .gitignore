@@ -4,8 +4,10 @@ node_modules/
 # Frontend build (built on Railway during deploy)
 frontend/dist/
 
-# Local SQLite DB (optional: keep untracked so each env has its own; Railway uses Volume)
-# backend/data/*.db
+# Local SQLite DB（专家评分使用被试端提交的数据；本地/Excel 数据不上传）
+backend/data/*.db
+# 本地 Excel 收上的数据不上传
+materials/*.xlsx
 
 # Env and secrets
 .env
