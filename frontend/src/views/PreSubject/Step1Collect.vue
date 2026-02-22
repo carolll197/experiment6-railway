@@ -1,43 +1,50 @@
 <template>
-  <div class="page-wrap page-consent">
-    <p class="label-q">您的被试编号为？</p>
-    <BaseTextInput v-model="subjectId" placeholder="请输入被试编号" class="mb-q" />
-    <p class="label-q">您的姓名是？</p>
-    <BaseTextInput v-model="name" placeholder="请输入姓名" class="mb-q" />
-    <div style="margin-top: 20px; text-align: center;">
-      <BasePrimaryButton
-        label="确定"
-        :enabled="canNext"
-        @click="onConfirm"
-      />
+  <div class="collect-wrap">
+    <div class="file-container">
+      <label class="collect-label">您的被试编号为？</label>
+      <BaseTextInput v-model="localSubjectId" placeholder="请输入被试编号" />
+    </div>
+    <div class="file-container">
+      <label class="collect-label">您的姓名是？</label>
+      <BaseTextInput v-model="localName" placeholder="请输入姓名" />
+    </div>
+    <div class="btn-row">
+      <BasePrimaryButton label="确定" :enabled="localSubjectId && localName" @click="onNext" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, watch } from 'vue';
 import BaseTextInput from '../../components/BaseTextInput.vue';
 import BasePrimaryButton from '../../components/BasePrimaryButton.vue';
 
-const subjectId = defineModel('subjectId', { type: String, default: '' });
-const name = defineModel('name', { type: String, default: '' });
+const props = defineProps({
+  subjectId: String,
+  name: String,
+});
 
-const canNext = computed(() => (subjectId.value || '').trim() !== '' && (name.value || '').trim() !== '');
+const emit = defineEmits(['next', 'update:subjectId', 'update:name']);
 
-function onConfirm() {
-  if (!canNext.value) return;
-  emit('next');
+const localSubjectId = ref(props.subjectId || '');
+const localName = ref(props.name || '');
+
+watch(localSubjectId, (newVal) => {
+  emit('update:subjectId', newVal);
+});
+
+watch(localName, (newVal) => {
+  emit('update:name', newVal);
+});
+
+function onNext() {
+  if (localSubjectId.value && localName.value) {
+    emit('next');
+  }
 }
-const emit = defineEmits(['next']);
 </script>
 
 <style scoped>
-.label-q {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--color-text);
-  margin: 12px 0;
-  text-align: left;
-}
-.mb-q { margin-bottom: 4px; }
-</style>
+.collect-wrap {
+  min-height: 100vh;
+  background:

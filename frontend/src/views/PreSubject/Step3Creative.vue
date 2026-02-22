@@ -9,7 +9,7 @@
           <BriefContent :content="briefQuestion1" />
         </div>
         <div class="left-bottom file-container panel-border">
-          <h2 class="text-h2">创造力维度</h2>
+          <h2 class="brief-eval-section-title spacing-12">创造力维度</h2>
           <EvalDimension />
         </div>
       </div>
@@ -94,8 +94,8 @@ const modules = [
   {
     key: 'big_idea',
     title: '模块1：核心创意点与比喻（The Big Idea & Metaphor）',
-    lengthHint: '至少30字',
-    minLength: 30,
+    lengthHint: '至少50字',
+    minLength: 50,
     hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="hint-label">思维发散提示：</span><span class="hint-content">你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。</span>',
     placeholder: '',
     big: true,
@@ -103,8 +103,8 @@ const modules = [
   {
     key: 'highlight_scene',
     title: '模块2：高光画面描述（The Highlight Scene）',
-    lengthHint: '至少30字',
-    minLength: 30,
+    lengthHint: '至少50字',
+    minLength: 50,
     hint: '如果这是一支视频广告，请描绘其中最精彩、最抓人眼球的那一幕画面。<br/><span class="hint-label">画面丰富度提示：</span><span class="hint-content">请尽量调动观众的多重感官！补充丰富的视觉细节（如：冷暖光影、特写镜头、极具反差的色彩）、听觉细节（如：特殊的音效、背景音乐、环境音）以及角色的细微动作或表情。细节越丰满、戏剧张力越强越好！</span>',
     placeholder: '',
     big: true,
@@ -143,7 +143,7 @@ const failReason = ref('');
 function onSubmit() {
   const invalid = firstInvalidField();
   if (invalid) {
-    failReason.value = `${invalid.label}字数至少为30个字`;
+    failReason.value = `${invalid.label}字数至少为50个字`;
     showFailModal.value = true;
     return;
   }
@@ -223,7 +223,12 @@ onUnmounted(() => {
 .creative-wrap {
   min-height: 100vh;
   background: var(--color-page-bg);
-  padding: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .timer-bar {
   text-align: center;
@@ -244,7 +249,7 @@ onUnmounted(() => {
 }
 .left-col {
   display: grid;
-  grid-template-rows: 70% 1fr;
+  grid-template-rows: 1fr 1fr;
   gap: 8px;
   max-height: calc(100vh - 80px);
   overflow: hidden;

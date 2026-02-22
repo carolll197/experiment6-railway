@@ -60,7 +60,7 @@ const parsedBlocks = computed(() => {
 /* 创意简报：正文宋体，仅小标题文字加粗 */
 .brief-content { font-size: 14px; line-height: 1.5; color: var(--color-text, #333); font-family: "SimSun", "Songti SC", serif; }
 .brief-content .brief-title { font-size: 16px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
-.brief-content .brief-subtitle { font-size: 15px; font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
+.brief-content .brief-subtitle { font-size: 14px; font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
 .brief-content .brief-subtitle strong { font-weight: 700; }
-.brief-content .text-body { font-size: 14px; font-weight: 400; }
+.brief-content .text-body { font-size: 14px; font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
 </style>

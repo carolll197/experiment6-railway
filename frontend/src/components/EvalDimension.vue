@@ -19,3 +19,9 @@ const props = defineProps({
 
 const introText = props.useStandardIntro ? evaluationStandardIntro : evaluationDimensionCopy.intro;
 </script>
+
+<style scoped>
+.eval-dimension { font-family: "SimSun", "Songti SC", serif; font-size: 14px; line-height: 1.5; color: var(--color-text, #333); }
+.eval-dimension .text-body { font-size: 14px; font-family: "SimSun", "Songti SC", serif; }
+.eval-dimension .text-h3 { font-size: 14px; font-weight: 700; font-family: "SimSun", "Songti SC", serif; }
+</style>

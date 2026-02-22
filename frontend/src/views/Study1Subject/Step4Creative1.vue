@@ -68,12 +68,12 @@ const timeText = computed(() => {
 const form = ref({ ...defaultForm() });
 
 const modules = [
-  { key: 'big_idea', title: '模块1：核心创意点与比喻（The Big Idea & Metaphor）', lengthHint: '至少30字', minLength: 30, hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="hint-label">思维发散提示：</span><span class="hint-content">你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。</span>', placeholder: '', big: true },
-  { key: 'highlight_scene', title: '模块2：高光画面描述（The Highlight Scene）', lengthHint: '至少30字', minLength: 30, hint: '如果这是一支视频广告，请描绘其中最精彩、最抓人眼球的那一幕画面。<br/><span class="hint-label">画面丰富度提示：</span><span class="hint-content">请尽量调动观众的多重感官！补充丰富的视觉细节（如：冷暖光影、特写镜头、极具反差的色彩）、听觉细节（如：特殊的音效、背景音乐、环境音）以及角色的细微动作或表情。细节越丰满、戏剧张力越强越好！</span>', placeholder: '', big: true },
+  { key: 'big_idea', title: '模块1：核心创意点与比喻（The Big Idea & Metaphor）', lengthHint: '至少50字', minLength: 50, hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="hint-label">思维发散提示：</span><span class="hint-content">你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。</span>', placeholder: '', big: true },
+  { key: 'highlight_scene', title: '模块2：高光画面描述（The Highlight Scene）', lengthHint: '至少50字', minLength: 50, hint: '如果这是一支视频广告，请描绘其中最精彩、最抓人眼球的那一幕画面。<br/><span class="hint-label">画面丰富度提示：</span><span class="hint-content">请尽量调动观众的多重感官！补充丰富的视觉细节（如：冷暖光影、特写镜头、极具反差的色彩）、听觉细节（如：特殊的音效、背景音乐、环境音）以及角色的细微动作或表情。细节越丰满、戏剧张力越强越好！</span>', placeholder: '', big: true },
   { key: 'slogan', title: '模块3：主打广告语（The Slogan）', lengthHint: '无最低字数限制', minLength: 0, hint: '请为你的广告写一句作为结尾的"点睛之笔"（一句话广告语）。<br/><span class="hint-label">金句提示：</span><span class="hint-content">不需要像传统的促销口号，它可以是一句极具态度的宣言、一个充满画面感的神级反转，或者一句直击灵魂的感叹。</span>', placeholder: '', big: false },
 ];
 
-const MIN_LEN = 30;
+const MIN_LEN = 50;
 const labels = { big_idea: '核心创意点与比喻', highlight_scene: '高光画面描述', slogan: '主打广告语' };
 
 function wordCount(str) { return (str || '').replace(/\s/g, '').length; }
@@ -89,7 +89,7 @@ const failReason = ref('');
 
 function onSubmit() {
   const invalid = firstInvalidField();
-  if (invalid) { failReason.value = `${invalid.label}字数至少为30个字`; showFailModal.value = true; return; }
+  if (invalid) { failReason.value = `${invalid.label}字数至少为50个字`; showFailModal.value = true; return; }
   submitPlan(false);
 }
 
@@ -149,10 +149,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.creative-wrap { min-height: 100vh; background: var(--color-page-bg); padding: 16px; }
+.creative-wrap { min-height: 100vh; background: var(--color-page-bg); padding: 24px 16px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .timer-bar { text-align: center; padding: 8px 0; position: sticky; top: 0; background: var(--color-page-bg); z-index: 10; }
 .two-cols { width: 90%; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-.left-col { display: grid; grid-template-rows: 70% 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
+.left-col { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
 .left-top, .left-bottom { overflow: auto; padding: 16px; }
 .right-col { display: flex; flex-direction: column; gap: 20px; max-height: calc(100vh - 80px); overflow: auto; padding: 12px; background: var(--color-page-bg); }
 .module { padding: 12px; border: 1px solid var(--color-border-line); min-height: 120px; display: flex; flex-direction: column; flex-shrink: 0; }
