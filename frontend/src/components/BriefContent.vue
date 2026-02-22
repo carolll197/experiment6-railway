@@ -19,9 +19,9 @@ const props = defineProps({
 
 // 题目行 = 以"题目"开头的行（题目 / 题目 1 / 题目： 等）
 const TITLE_RE = /^题目/;
-// 四个小标题加粗：产品背景与事实、创意素材、创意任务、创意目标
-const BOLD_SUBTITLE_PREFIXES = ['产品背景与事实', '创意素材', '创意任务', '创意目标'];
-const SUBTITLE_KEYS = ['产品背景与事实：', '创意素材：', '创意任务：', '创意目标：'];
+// 四个小标题仅标题加粗：产品背景、创意素材、创意任务、创意目标
+const BOLD_SUBTITLE_PREFIXES = ['产品背景', '创意素材', '创意任务', '创意目标'];
+const SUBTITLE_KEYS = ['产品背景：', '创意素材：', '创意任务：', '创意目标：'];
 function getBoldPrefix(trimmed) {
   for (const p of BOLD_SUBTITLE_PREFIXES) {
     if (trimmed.startsWith(p)) return p;
@@ -57,9 +57,10 @@ const parsedBlocks = computed(() => {
 </script>
 
 <style scoped>
-/* 创意简报内容文字大小统一（被试端与专家端一致） */
-.brief-content { font-size: 14px; line-height: 1.5; color: var(--color-text, #333); }
-.brief-content .brief-title { font-size: 16px; font-weight: 600; }
-.brief-content .brief-subtitle { font-size: 15px; font-weight: 600; }
+/* 创意简报：正文宋体，仅小标题文字加粗 */
+.brief-content { font-size: 14px; line-height: 1.5; color: var(--color-text, #333); font-family: "SimSun", "Songti SC", serif; }
+.brief-content .brief-title { font-size: 16px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
+.brief-content .brief-subtitle { font-size: 15px; font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
+.brief-content .brief-subtitle strong { font-weight: 700; }
 .brief-content .text-body { font-size: 14px; font-weight: 400; }
 </style>

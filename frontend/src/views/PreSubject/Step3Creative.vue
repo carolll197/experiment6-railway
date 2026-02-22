@@ -15,7 +15,7 @@
       </div>
       <div class="right-col panel-border">
         <div class="module panel-border" v-for="(m, i) in modules" :key="i" :class="{ 'module-big': m.big }">
-          <h2 class="text-h2" style="font-weight: 400;">{{ m.title }} <span class="text-label">{{ m.lengthHint }}</span></h2>
+          <h2 class="brief-eval-section-title">{{ m.title }} <span class="text-label">{{ m.lengthHint }}</span></h2>
           <p class="module-hint" style="margin: 6px 0;" v-html="m.hint"></p>
           <BaseTextArea
             v-model="form[m.key]"
@@ -293,13 +293,12 @@ onUnmounted(() => {
 .module-big :deep(textarea) {
   min-height: 140px;
 }
-.brief-text {
-  white-space: pre-wrap;
-}
-/* 产出模块：说明不斜体，提示小标题加粗，提示内容斜体 */
-.module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; }
-.module-hint :deep(.hint-label) { font-weight: 700; }
-.module-hint :deep(.hint-content) { font-style: italic; }
+.brief-text { white-space: pre-wrap; }
+.brief-eval-section-title { font-size: 16px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
+/* 产出模块：大标题与创意简报一致，正文宋体，提示小标题宋体加粗，提示内容不加粗 */
+.module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
+.module-hint :deep(.hint-label) { font-weight: 700; font-family: "SimSun", "Songti SC", serif; }
+.module-hint :deep(.hint-content) { font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
 .btn-row {
   margin-top: 24px;
   padding: 8px 0;

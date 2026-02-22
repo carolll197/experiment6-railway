@@ -12,16 +12,12 @@
           <div class="text-score counter">{{ currentIndex + 1 }}/{{ plans.length }}</div>
           <h3 class="text-h3" style="margin: 8px 0;">被试编号：{{ currentPlan ? currentPlan.subject_id : '—' }}</h3>
           <div v-if="currentPlan" class="plan-blocks text-body">
-            <p><strong>目标受众画像</strong></p>
-            <p>{{ currentPlan.target_audience || '—' }}</p>
-            <p style="margin-top: 6px;"><strong>痛点挖掘</strong></p>
-            <p>{{ currentPlan.pain_point || '—' }}</p>
-            <p style="margin-top: 6px;"><strong>核心洞察</strong></p>
-            <p>{{ currentPlan.insight || '—' }}</p>
-            <p style="margin-top: 6px;"><strong>核心创意</strong></p>
-            <p>{{ currentPlan.big_idea || '—' }}</p>
-            <p style="margin-top: 6px;"><strong>创意理由</strong></p>
-            <p>{{ currentPlan.rationale || '—' }}</p>
+            <p><strong>核心创意点与比喻</strong></p>
+            <p class="plan-text">{{ currentPlan.big_idea || '—' }}</p>
+            <p style="margin-top: 6px;"><strong>高光画面描述</strong></p>
+            <p class="plan-text">{{ currentPlan.highlight_scene || '—' }}</p>
+            <p style="margin-top: 6px;"><strong>主打广告语</strong></p>
+            <p class="plan-text">{{ currentPlan.slogan || '—' }}</p>
           </div>
           <div class="invalid-wrap">
             <BaseCheckbox v-model="currentInvalid" label="标记为无效数据" />
@@ -115,7 +111,7 @@ const canNext = computed(() => {
   // 标记为无效数据后可以直接点下一份
   if (invalidBySubject.value[sid]) return true;
   const s = scoresBySubject.value[sid]?.scores || {};
-  for (let i = 1; i <= 13; i++) if (s[i] == null || s[i] === undefined) return false;
+  for (let i = 1; i <= 11; i++) if (s[i] == null || s[i] === undefined) return false;
   return true;
 });
 
@@ -126,14 +122,14 @@ function saveCurrentScores() {
   const isInvalid = !!invalidBySubject.value[sid];
   const s = scoresBySubject.value[sid]?.scores || {};
   const scores = [];
-  for (let i = 1; i <= 13; i++) {
+  for (let i = 1; i <= 11; i++) {
     const v = s[i];
     scores.push({ question_no: i, score: v != null ? v : 0 });
   }
   if (!isInvalid) {
     let filled = 0;
-    for (let i = 1; i <= 13; i++) if (s[i] != null) filled++;
-    if (filled !== 13) return;
+    for (let i = 1; i <= 11; i++) if (s[i] != null) filled++;
+    if (filled !== 11) return;
   }
   return fetch('/api/pre-expert/scores', {
     method: 'POST',
@@ -222,7 +218,8 @@ onMounted(() => {
   top: 8px;
   right: 16px;
 }
-.plan-blocks p { margin: 2px 0; }
+.plan-blocks p { margin: 2px 0; font-family: "SimSun", "Songti SC", serif; }
+.plan-blocks .plan-text { white-space: pre-wrap; word-break: break-word; }
 .invalid-wrap { margin-top: 16px; }
 .right-col {
   position: sticky;

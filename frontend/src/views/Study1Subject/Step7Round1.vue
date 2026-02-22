@@ -53,7 +53,7 @@
         </div>
         <div class="right-col panel-border">
           <div class="module panel-border" v-for="(m, i) in modules" :key="i" :class="{ 'module-big': m.big }">
-            <h2 class="text-h2" style="font-weight: 400;">{{ m.title }} <span class="text-label">{{ m.lengthHint }}</span></h2>
+            <h2 class="brief-eval-section-title">{{ m.title }} <span class="text-label">{{ m.lengthHint }}</span></h2>
             <p class="module-hint" style="margin: 6px 0;" v-html="m.hint"></p>
             <BaseTextArea v-model="form[m.key]" :placeholder="m.placeholder" show-count :min-length="m.minLength" />
           </div>
@@ -256,8 +256,9 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearIn
 .module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; }
 .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
 .module-big :deep(textarea) { min-height: 140px; }
-.module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; }
-.module-hint :deep(.hint-label) { font-weight: 700; }
-.module-hint :deep(.hint-content) { font-style: italic; }
+.brief-eval-section-title { font-size: 16px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
+.module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
+.module-hint :deep(.hint-label) { font-weight: 700; font-family: "SimSun", "Songti SC", serif; }
+.module-hint :deep(.hint-content) { font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
 @media (max-width: 900px) { .collab-wrap .two-cols { grid-template-columns: 1fr; } }
 </style>
