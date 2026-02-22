@@ -89,11 +89,9 @@
                   <td class="cell-name">{{ r.name || '—' }}</td>
                   <td>{{ r.phase }}</td>
                   <td>{{ r.question_no }}</td>
-                  <td class="cell-body">{{ r.target_audience }}</td>
-                  <td class="cell-body">{{ r.pain_point }}</td>
-                  <td class="cell-body">{{ r.insight }}</td>
                   <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
-                  <td class="cell-body">{{ r.rationale }}</td>
+                  <td class="cell-body">{{ r.highlight_scene }}</td>
+                  <td class="cell-body">{{ r.slogan }}</td>
                   <td>{{ formatBeijingTime(r.start_time) }}</td>
                   <td>{{ formatBeijingTime(r.end_time) }}</td>
                   <td>{{ formatBeijingTime(r.submitted_at) }}</td>
@@ -151,14 +149,14 @@
             </div>
           </div>
         </template>
-        <!-- 环节一选择与打分：纵向13题，横向您的作品/AI作品，按题号呈现 -->
+        <!-- 环节一选择与打分：纵向11题，横向您的作品/AI作品，按题号呈现 -->
         <template v-else-if="filters.dataType === 'phase1-choices'">
           <div v-if="choices.length === 0" class="empty-hint text-hint center">暂无环节一选择数据</div>
           <div v-else class="table-wrap phase1-scores-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th :colspan="4 + 13 * 2" class="text-table-head">研究一/环节一选择与打分（创造力评价13题）</th>
+                  <th :colspan="4 + 11 * 2" class="text-table-head">研究一/环节一选择与打分（创造力评价11题）</th>
                 </tr>
                 <tr>
                   <th class="text-table-head th-checkbox">
@@ -167,14 +165,14 @@
                   <th class="text-table-head th-sort" @click="toggleSortChoice('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                   <th class="text-table-head">被试姓名</th>
                   <th class="text-table-head">最终提交作品</th>
-                  <th v-for="n in 13" :key="n" colspan="2" class="text-table-head">题{{ n }}</th>
+                  <th v-for="n in 11" :key="n" colspan="2" class="text-table-head">题{{ n }}</th>
                 </tr>
                 <tr>
                   <th class="text-table-head"></th>
                   <th class="text-table-head"></th>
                   <th class="text-table-head"></th>
                   <th class="text-table-head"></th>
-                  <template v-for="n in 13" :key="n">
+                  <template v-for="n in 11" :key="n">
                     <th class="text-table-head text-table-sub">您的作品</th>
                     <th class="text-table-head text-table-sub">AI作品</th>
                   </template>
@@ -188,7 +186,7 @@
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.name || '—' }}</td>
                   <td>{{ r.chosen || '—' }}</td>
-                  <template v-for="n in 13" :key="n">
+                  <template v-for="n in 11" :key="n">
                     <td class="text-score">{{ getScoreByQuestion(r, n).yours }}</td>
                     <td class="text-score">{{ getScoreByQuestion(r, n).ai }}</td>
                   </template>
@@ -330,11 +328,9 @@ const planColumns = [
   { key: 'name', label: '被试姓名' },
   { key: 'phase', label: '创作环节' },
   { key: 'question_no', label: '题号' },
-  { key: 'target_audience', label: '目标受众画像' },
-  { key: 'pain_point', label: '痛点挖掘' },
-  { key: 'insight', label: '核心洞察' },
-  { key: 'big_idea', label: '核心创意' },
-  { key: 'rationale', label: '创意理由' },
+  { key: 'big_idea', label: '核心创意点与比喻' },
+  { key: 'highlight_scene', label: '高光画面描述' },
+  { key: 'slogan', label: '主打广告语' },
   { key: 'start_time', label: '开始时间' },
   { key: 'end_time', label: '结束时间' },
   { key: 'submitted_at', label: '提交时间' },

@@ -79,11 +79,9 @@
                   </td>
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.name || '—' }}</td>
-                  <td class="cell-body">{{ r.target_audience }}</td>
-                  <td class="cell-body">{{ r.pain_point }}</td>
-                  <td class="cell-body">{{ r.insight }}</td>
                   <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
-                  <td class="cell-body">{{ r.rationale }}</td>
+                  <td class="cell-body">{{ r.highlight_scene }}</td>
+                  <td class="cell-body">{{ r.slogan }}</td>
                   <td>{{ formatBeijingTime(r.start_time) }}</td>
                   <td>{{ formatBeijingTime(r.end_time) }}</td>
                   <td>{{ formatBeijingTime(r.submitted_at) }}</td>
@@ -255,11 +253,9 @@ function importPrePlansFromExcel() {
 const planColumns = [
   { key: 'subject_id', label: '被试编号' },
   { key: 'name', label: '被试姓名' },
-  { key: 'target_audience', label: '目标受众画像' },
-  { key: 'pain_point', label: '痛点挖掘' },
-  { key: 'insight', label: '核心洞察' },
-  { key: 'big_idea', label: '核心创意' },
-  { key: 'rationale', label: '创意理由' },
+  { key: 'big_idea', label: '核心创意点与比喻' },
+  { key: 'highlight_scene', label: '高光画面描述' },
+  { key: 'slogan', label: '主打广告语' },
   { key: 'start_time', label: '开始时间' },
   { key: 'end_time', label: '结束时间' },
   { key: 'submitted_at', label: '提交时间' },

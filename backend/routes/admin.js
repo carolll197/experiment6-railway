@@ -533,14 +533,14 @@ adminRouter.get('/export/study1-phase1-scores', (req, res) => {
       const byNo = {};
       for (const d of scores) {
         const no = Number(d.question_no);
-        if (no >= 1 && no <= 13) byNo[no] = { yours: d.your_score, ai: d.ai_score };
+        if (no >= 1 && no <= 11) byNo[no] = { yours: d.your_score, ai: d.ai_score };
       }
       const row = {
         被试编号: r.subject_id,
         被试姓名: r.name ?? '',
         最终提交作品: r.chosen || '',
       };
-      for (let n = 1; n <= 13; n++) {
+      for (let n = 1; n <= 11; n++) {
         const s = byNo[n];
         row[`题${n}-您的作品`] = s && s.yours != null ? s.yours : '';
         row[`题${n}-AI作品`] = s && s.ai != null ? s.ai : '';
