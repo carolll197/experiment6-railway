@@ -35,8 +35,8 @@ adminRouter.post('/pre/import-from-excel', (req, res) => {
     }
     const del = db.prepare('DELETE FROM pre_subject_plans WHERE subject_id = ?');
     const ins = db.prepare(`
-      INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, highlight_scene, slogan, submitted_at, is_auto_saved, created_at, start_time, end_time)
+      VALUES (?, ?, '', '', '', ?, '', ?, ?, ?, ?, ?, ?, ?)
     `);
     const submittedAt = nowStr();
     for (const r of rows) {
@@ -46,11 +46,9 @@ adminRouter.post('/pre/import-from-excel', (req, res) => {
       ins.run(
         subject_id,
         r.name ?? '',
-        r.target_audience ?? '',
-        r.pain_point ?? '',
-        r.insight ?? '',
         r.big_idea ?? '',
-        r.rationale ?? '',
+        r.highlight_scene ?? '',
+        r.slogan ?? '',
         r.submitted_at || submittedAt,
         r.is_auto_saved ? 1 : 0,
         r.submitted_at || submittedAt,
@@ -344,11 +342,9 @@ adminRouter.get('/export/pre-plans', (req, res) => {
       rows.map((r) => ({
         被试编号: r.subject_id,
         被试姓名: r.name,
-        目标受众画像: r.target_audience,
-        痛点挖掘: r.pain_point,
-        核心洞察: r.insight,
-        核心创意: r.big_idea,
-        创意理由: r.rationale,
+        核心创意点与比喻: r.big_idea,
+        高光画面描述: r.highlight_scene,
+        主打广告语: r.slogan,
         提交时间: r.submitted_at,
         是否自动保存: r.is_auto_saved ? '是' : '否',
       }))
@@ -454,11 +450,9 @@ adminRouter.get('/export/study1-plans', (req, res) => {
         姓名: r.name,
         创作环节: r.phase,
         题号: r.question_no,
-        目标受众画像: r.target_audience,
-        痛点挖掘: r.pain_point,
-        核心洞察: r.insight,
-        核心创意: r.big_idea,
-        创意理由: r.rationale,
+        核心创意点与比喻: r.big_idea,
+        高光画面描述: r.highlight_scene,
+        主打广告语: r.slogan,
         提交时间: r.submitted_at,
         是否自动保存: r.is_auto_saved ? '是' : '否',
         环节一最终提交作品: ch ? ch.chosen : '',

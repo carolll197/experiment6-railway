@@ -122,11 +122,9 @@ study1SubjectRouter.post('/submit', (req, res) => {
       name,
       phase,
       question_no,
-      target_audience,
-      pain_point,
-      insight,
       big_idea,
-      rationale,
+      highlight_scene,
+      slogan,
       is_auto_saved = 0,
       startTime,
     } = req.body;
@@ -140,8 +138,8 @@ study1SubjectRouter.post('/submit', (req, res) => {
     );
     const stmt = db.prepare(`
       INSERT INTO study1_subject_plans
-        (subject_id, name, phase, question_no, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (subject_id, name, phase, question_no, target_audience, pain_point, insight, big_idea, rationale, highlight_scene, slogan, submitted_at, is_auto_saved, created_at, start_time, end_time)
+      VALUES (?, ?, ?, ?, '', '', '', ?, '', ?, ?, ?, ?, ?, ?, ?)
     `);
     const submittedAt = nowStr();
     const { endTime } = req.body;
@@ -150,11 +148,9 @@ study1SubjectRouter.post('/submit', (req, res) => {
       name,
       phase,
       question_no,
-      target_audience ?? '',
-      pain_point ?? '',
-      insight ?? '',
       big_idea ?? '',
-      rationale ?? '',
+      highlight_scene ?? '',
+      slogan ?? '',
       submittedAt,
       is_auto_saved ? 1 : 0,
       submittedAt,

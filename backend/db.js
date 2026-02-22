@@ -147,8 +147,12 @@ function runSchema() {
   const migrations = [
     ['pre_subject_plans', 'start_time', 'TEXT'],
     ['pre_subject_plans', 'end_time', 'TEXT'],
+    ['pre_subject_plans', 'highlight_scene', 'TEXT'],
+    ['pre_subject_plans', 'slogan', 'TEXT'],
     ['study1_subject_plans', 'start_time', 'TEXT'],
     ['study1_subject_plans', 'end_time', 'TEXT'],
+    ['study1_subject_plans', 'highlight_scene', 'TEXT'],
+    ['study1_subject_plans', 'slogan', 'TEXT'],
   ];
   for (const [table, col, type] of migrations) {
     try {

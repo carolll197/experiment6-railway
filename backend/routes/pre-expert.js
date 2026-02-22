@@ -86,7 +86,7 @@ preExpertRouter.get('/plans', (req, res) => {
 });
 
 // 提交某份方案的专家评分（每题一条，带是否无效）
-// 始终写入 13 条记录（每题一条），勾选无效时也保留该专家的 13 题评分（未填题为 0），便于主试端看到评分且能识别谁标了无效
+// 始终写入 11 条记录（每题一条），勾选无效时也保留该专家的 11 题评分（未填题为 0），便于主试端看到评分且能识别谁标了无效
 preExpertRouter.post('/scores', (req, res) => {
   try {
     const db = req.app.get('db');
@@ -108,7 +108,7 @@ preExpertRouter.post('/scores', (req, res) => {
       INSERT INTO pre_expert_scores (subject_id, expert_name, question_no, score, is_invalid, scored_at)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
-    for (let question_no = 1; question_no <= 13; question_no++) {
+    for (let question_no = 1; question_no <= 11; question_no++) {
       const score = scoreByNo[question_no] != null ? scoreByNo[question_no] : 0;
       insWithTime.run(subject_id, expert_name, question_no, score, inv, scoredAt);
     }

@@ -31,8 +31,8 @@ async function main() {
   }
   const del = db.prepare('DELETE FROM pre_subject_plans WHERE subject_id = ?');
   const ins = db.prepare(`
-    INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, highlight_scene, slogan, submitted_at, is_auto_saved, created_at, start_time, end_time)
+    VALUES (?, ?, '', '', '', ?, '', ?, ?, ?, ?, ?, ?, ?)
   `);
   const submittedAt = nowStr();
   for (const r of rows) {
@@ -42,11 +42,9 @@ async function main() {
     ins.run(
       subject_id,
       r.name ?? '',
-      r.target_audience ?? '',
-      r.pain_point ?? '',
-      r.insight ?? '',
       r.big_idea ?? '',
-      r.rationale ?? '',
+      r.highlight_scene ?? '',
+      r.slogan ?? '',
       r.submitted_at || submittedAt,
       r.is_auto_saved ? 1 : 0,
       r.submitted_at || submittedAt,

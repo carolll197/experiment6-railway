@@ -84,11 +84,9 @@ preSubjectRouter.post('/submit', (req, res) => {
     const {
       subject_id,
       name,
-      target_audience,
-      pain_point,
-      insight,
       big_idea,
-      rationale,
+      highlight_scene,
+      slogan,
       is_auto_saved = 0,
       startTime,
       endTime,
@@ -101,17 +99,15 @@ preSubjectRouter.post('/submit', (req, res) => {
     db.run('DELETE FROM pre_subject_plans WHERE subject_id = ?', [subject_id]);
     const stmt = db.prepare(`
       INSERT INTO pre_subject_plans
-        (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, submitted_at, is_auto_saved, created_at, start_time, end_time)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, highlight_scene, slogan, submitted_at, is_auto_saved, created_at, start_time, end_time)
+      VALUES (?, ?, '', '', '', ?, '', ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       subject_id,
       name,
-      target_audience ?? '',
-      pain_point ?? '',
-      insight ?? '',
       big_idea ?? '',
-      rationale ?? '',
+      highlight_scene ?? '',
+      slogan ?? '',
       submittedAt,
       is_auto_saved ? 1 : 0,
       submittedAt,
