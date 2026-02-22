@@ -4,7 +4,7 @@
     <div class="file-container">
       <p class="text-body">欢迎您参与本次关于"广告创意生成"的心理学研究。在决定是否参与之前，请您仔细阅读以下信息。</p>
       <p class="text-body"><strong>研究背景与目的</strong> 本研究旨在探索个体如何进行广告策划与创意构思。</p>
-      <p class="text-body"><strong>实验流程与任务</strong> 本实验预计耗时约12分钟，全程在线进行，您将完成1份广告创意策划案的撰写。</p>
+      <p class="text-body"><strong>实验流程与任务</strong> 本实验预计耗时约10分钟，全程在线进行，您将完成1份广告创意策划案的撰写。</p>
       <p class="text-body"><strong>报酬与奖金机制</strong></p>
       <p class="text-body">- 基础报酬： 认真完成所有流程且通过审核的被试，将获得【5元】的基础被试费。</p>
       <p class="text-body">- 额外奖金： 我们将邀请行业专家对作品的创造力进行盲审排名，排名前 15% 的创作者将获得额外【5元】的奖金，排名15%-65%的创作者将获得额外【2元】的奖金。</p>
