@@ -47,4 +47,22 @@ function onNext() {
 <style scoped>
 .collect-wrap {
   min-height: 100vh;
-  background:
+  background: var(--color-page-bg);
+  padding: 16px;
+}
+.collect-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 12px;
+}
+.file-container {
+  margin-bottom: 12px;
+}
+.btn-row {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+</style>
