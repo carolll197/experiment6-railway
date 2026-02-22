@@ -6,7 +6,7 @@
       <p class="text-body"><strong>研究背景与目的</strong> 本研究旨在探索个体如何进行广告策划与创意构思。</p>
       <p class="text-body"><strong>实验流程与任务</strong> 本实验预计耗时约12分钟，全程在线进行，您将完成1份广告创意策划案的撰写。</p>
       <p class="text-body"><strong>报酬与奖金机制</strong></p>
-      <p class="text-body">- 基础报酬： 认真完成所有流程且通过审核的被试，将获得 [5元] 的基础被试费。</p>
+      <p class="text-body">- 基础报酬： 认真完成所有流程且通过审核的被试，将获得【5元】的基础被试费。</p>
       <p class="text-body">- 额外奖金： 我们将邀请行业专家对作品的创造力进行盲审排名，排名前 15% 的创作者将获得额外【5元】的奖金，排名15%-65%的创作者将获得额外【2元】的奖金。</p>
       <p class="text-body">- 审核说明： 本研究谢绝自行使用AI生成答案，后台将检测作答质量，对于态度敷衍、胡乱作答或经检测发现违规使用AI生成的作品，将不予发放任何报酬。</p>
       <p class="text-body"><strong>信息保密</strong> 您的所有数据仅用于学术研究分析，我们承诺您的个人身份信息及作答信息将会被严格保密。</p>
@@ -57,14 +57,14 @@ defineEmits(['next']);
   padding: 16px;
 }
 .text-h1 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #333333;
   text-align: center;
   margin: 16px 0;
 }
 .text-body {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
   color: #333333;
   line-height: 1.4;

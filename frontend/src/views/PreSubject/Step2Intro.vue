@@ -50,7 +50,7 @@ function onNext() {
 }
 
 .text-h1 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #333333;
   text-align: center;
@@ -58,7 +58,7 @@ function onNext() {
 }
 
 .text-h2 {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   color: #333333;
   text-align: left;
@@ -66,7 +66,7 @@ function onNext() {
 }
 
 .text-h3 {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 500;
   color: #333333;
   text-align: left;
@@ -74,7 +74,7 @@ function onNext() {
 }
 
 .text-body {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
   color: #333333;
   line-height: 1.4;
@@ -82,7 +82,7 @@ function onNext() {
 }
 
 .text-hint {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   color: #666666;
   line-height: 1.3;

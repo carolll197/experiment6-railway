@@ -2,11 +2,9 @@
   <div class="score-page">
     <div class="two-cols">
       <div class="left-col">
-        <div class="left-top file-container panel-border">
+        <div class="left-top file-container panel-border brief-big">
           <h2 class="brief-eval-section-title">创意简报</h2>
           <BriefContent :content="briefQuestion1" />
-          <h2 class="brief-eval-section-title spacing-12">评价维度</h2>
-          <EvalDimension />
         </div>
         <div class="left-bottom file-container panel-border">
           <div class="text-score counter">{{ currentIndex + 1 }}/{{ plans.length }}</div>
@@ -60,7 +58,6 @@ import { ref, computed, watch, onMounted } from 'vue';
 let saveTimer = null;
 import BaseCheckbox from '../../components/BaseCheckbox.vue';
 import BaseScoreAxis from '../../components/BaseScoreAxis.vue';
-import EvalDimension from '../../components/EvalDimension.vue';
 import BriefContent from '../../components/BriefContent.vue';
 import { briefQuestion1, creativityScaleItems } from '../../content/preExperiment.js';
 
@@ -237,6 +234,11 @@ onMounted(() => {
 }
 .scale-item-first { margin-top: 12px; }
 .scale-item .text-h3 { display: block; margin-bottom: 4px; }
+/* 专家版创意简报除标题外整体大两号 */
+.brief-big :deep(.brief-content) { font-size: 16px; }
+.brief-big :deep(.brief-content .brief-title) { font-size: 18px; }
+.brief-big :deep(.brief-content .brief-subtitle) { font-size: 16px; }
+.brief-big :deep(.brief-content .text-body) { font-size: 16px; }
 .brief-text { white-space: pre-wrap; }
 .btn-row {
   display: flex;
