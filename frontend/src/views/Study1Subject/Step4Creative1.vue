@@ -16,9 +16,9 @@
       </div>
       <div class="right-col panel-border">
         <div class="module panel-border" v-for="(m, i) in modules" :key="i" :class="{ 'module-big': m.big }">
-          <h2 class="text-h2" style="font-weight: 400;">{{ m.title }} <span class="text-label">（每栏至少20个字）</span></h2>
+          <h2 class="text-h2" style="font-weight: 400;">{{ m.title }} <span class="text-label">{{ m.lengthHint }}</span></h2>
           <p class="text-hint" style="margin: 6px 0;" v-html="m.hint"></p>
-          <BaseTextArea v-model="form[m.key]" :placeholder="m.placeholder" show-count :min-length="20" />
+          <BaseTextArea v-model="form[m.key]" :placeholder="m.placeholder" show-count :min-length="m.minLength" />
         </div>
         <div class="btn-row">
           <BasePrimaryButton label="完成创作" :enabled="true" @click="onSubmit" />
@@ -53,7 +53,7 @@ const props = defineProps({
 const emit = defineEmits(['next', 'save']);
 
 const TOTAL_SEC = 10 * 60;
-const defaultForm = () => ({ target_audience: '', pain_point: '', insight: '', big_idea: '', rationale: '' });
+const defaultForm = () => ({ big_idea: '', highlight_scene: '', slogan: '' });
 const remaining = ref(
   props.initialTimerRemaining != null && props.initialTimerRemaining > 0 && props.initialTimerRemaining <= TOTAL_SEC
     ? props.initialTimerRemaining
@@ -69,21 +69,18 @@ const timeText = computed(() => {
 const form = ref({ ...defaultForm() });
 
 const modules = [
-  { key: 'target_audience', title: '目标受众画像 (Target Audience)', hint: '您打算把这个产品卖给哪类人群？有典型人物吗？ta是一个怎样的人？', placeholder: '', big: false },
-  { key: 'pain_point', title: '痛点挖掘(The Pain Point)', hint: 'ta为什么这样做？ta在烦恼什么？', placeholder: '', big: false },
-  { key: 'insight', title: '核心洞察（Insight）', hint: '您发现了哪些ta的心里话？可以用"其实，我……"或"我渴望……"的句式描述。', placeholder: '', big: false },
-  { key: 'big_idea', title: '核心创意（The Big Idea）', hint: '请包含以下两方面 1）概括您的核心创意点，即您将如何解决ta的痛点？<br/>2）在广告中，您打算用什么比喻、反转、或视觉符号，来直观地展示产品？请简要描述某一视觉画面来呈现您最关键的创意设定。', placeholder: '', big: true },
-  { key: 'rationale', title: '创意理由（Rationale）', hint: '为什么这个创意点能打动这群人？', placeholder: '', big: false },
+  { key: 'big_idea', title: '模块1：核心创意点与比喻（The Big Idea & Metaphor）', lengthHint: '至少30字', minLength: 30, hint: '如果这是一支视频广告，请概括你这支广告的"核心脑洞"，以下要素仅供参考：<br/>- 场景/世界观设定：故事发生在哪里？有什么特别之处？<br/>- 角色：主角是什么人或什么物？本产品在其中扮演了什么角色？<br/>- 核心故事线/反转：发生了什么事情？<br/><span class="text-label">思维发散提示：</span>你可以把它当成任何一种电影类型来构思（如：科幻宇宙、悬疑探案、武侠江湖、奇幻动画等），也可以把它设定在极其特殊的时空场景，或者把它比作任何意想不到的人或事物。视角越出人意料越好，但也请记得创意目标。', placeholder: '', big: true },
+  { key: 'highlight_scene', title: '模块2：高光画面描述（The Highlight Scene）', lengthHint: '至少30字', minLength: 30, hint: '如果这是一支视频广告，请描绘其中最精彩、最抓人眼球的那一幕画面。<br/><span class="text-label">画面丰富度提示：</span>请尽量调动观众的多重感官！补充丰富的视觉细节（如：冷暖光影、特写镜头、极具反差的色彩）、听觉细节（如：特殊的音效、背景音乐、环境音）以及角色的细微动作或表情。细节越丰满、戏剧张力越强越好！', placeholder: '', big: true },
+  { key: 'slogan', title: '模块3：主打广告语（The Slogan）', lengthHint: '无最低字数限制', minLength: 0, hint: '请为你的广告写一句作为结尾的"点睛之笔"（一句话广告语）。<br/><span class="text-label">金句提示：</span>不需要像传统的促销口号，它可以是一句极具态度的宣言、一个充满画面感的神级反转，或者一句直击灵魂的感叹。', placeholder: '', big: false },
 ];
 
-const MIN_LEN = 20;
-const labels = { target_audience: '目标受众画像', pain_point: '痛点挖掘', insight: '核心洞察', big_idea: '核心创意', rationale: '创意理由' };
+const MIN_LEN = 30;
+const labels = { big_idea: '核心创意点与比喻', highlight_scene: '高光画面描述', slogan: '主打广告语' };
 
 function wordCount(str) { return (str || '').replace(/\s/g, '').length; }
 function firstInvalidField() {
-  for (const k of Object.keys(form.value)) {
-    if (wordCount(form.value[k]) < MIN_LEN) return { key: k, label: labels[k] };
-  }
+  if (wordCount(form.value.big_idea) < MIN_LEN) return { key: 'big_idea', label: labels.big_idea };
+  if (wordCount(form.value.highlight_scene) < MIN_LEN) return { key: 'highlight_scene', label: labels.highlight_scene };
   return null;
 }
 
@@ -93,7 +90,7 @@ const failReason = ref('');
 
 function onSubmit() {
   const invalid = firstInvalidField();
-  if (invalid) { failReason.value = `${invalid.label}字数至少为20个字`; showFailModal.value = true; return; }
+  if (invalid) { failReason.value = `${invalid.label}字数至少为30个字`; showFailModal.value = true; return; }
   submitPlan(false);
 }
 
@@ -105,11 +102,9 @@ function submitPlan(isAutoSaved) {
     name: props.name,
     phase: '环节一',
     question_no: 1,
-    target_audience: form.value.target_audience,
-    pain_point: form.value.pain_point,
-    insight: form.value.insight,
     big_idea: form.value.big_idea,
-    rationale: form.value.rationale,
+    highlight_scene: form.value.highlight_scene,
+    slogan: form.value.slogan,
     is_auto_saved: isAutoSaved ? 1 : 0,
     startTime: props.startTime,
     endTime: new Date().toISOString(),

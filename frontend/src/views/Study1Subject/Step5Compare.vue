@@ -26,31 +26,23 @@
       <div class="file-container panel-border work-col" :style="{ order: leftFirst ? 1 : 2 }">
         <h2 class="text-h2 center work-label">{{ leftLabel }}</h2>
         <div class="work-blocks text-body">
-          <p><strong>目标受众画像</strong></p>
-          <p class="work-text">{{ leftWork.target_audience || '—' }}</p>
-          <p style="margin-top: 6px;"><strong>痛点挖掘</strong></p>
-          <p class="work-text">{{ leftWork.pain_point || '—' }}</p>
-          <p style="margin-top: 6px;"><strong>核心洞察</strong></p>
-          <p class="work-text">{{ leftWork.insight || '—' }}</p>
-          <p style="margin-top: 6px;"><strong>核心创意</strong></p>
+          <p><strong>核心创意点与比喻</strong></p>
           <p class="work-text">{{ leftWork.big_idea || '—' }}</p>
-          <p style="margin-top: 6px;"><strong>创意理由</strong></p>
-          <p class="work-text">{{ leftWork.rationale || '—' }}</p>
+          <p style="margin-top: 6px;"><strong>高光画面描述</strong></p>
+          <p class="work-text">{{ leftWork.highlight_scene || '—' }}</p>
+          <p style="margin-top: 6px;"><strong>主打广告语</strong></p>
+          <p class="work-text">{{ leftWork.slogan || '—' }}</p>
         </div>
       </div>
       <div class="file-container panel-border work-col" :style="{ order: leftFirst ? 2 : 1 }">
         <h2 class="text-h2 center work-label">{{ rightLabel }}</h2>
         <div class="work-blocks text-body">
-          <p><strong>目标受众画像</strong></p>
-          <p class="work-text">{{ rightWork.target_audience || '—' }}</p>
-          <p style="margin-top: 6px;"><strong>痛点挖掘</strong></p>
-          <p class="work-text">{{ rightWork.pain_point || '—' }}</p>
-          <p style="margin-top: 6px;"><strong>核心洞察</strong></p>
-          <p class="work-text">{{ rightWork.insight || '—' }}</p>
-          <p style="margin-top: 6px;"><strong>核心创意</strong></p>
+          <p><strong>核心创意点与比喻</strong></p>
           <p class="work-text">{{ rightWork.big_idea || '—' }}</p>
-          <p style="margin-top: 6px;"><strong>创意理由</strong></p>
-          <p class="work-text">{{ rightWork.rationale || '—' }}</p>
+          <p style="margin-top: 6px;"><strong>高光画面描述</strong></p>
+          <p class="work-text">{{ rightWork.highlight_scene || '—' }}</p>
+          <p style="margin-top: 6px;"><strong>主打广告语</strong></p>
+          <p class="work-text">{{ rightWork.slogan || '—' }}</p>
         </div>
       </div>
     </div>
