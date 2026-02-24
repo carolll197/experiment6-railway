@@ -31,7 +31,10 @@ adminRouter.post('/pre/import-from-excel', (req, res) => {
     const db = req.app.get('db');
     const rows = getPrePlansFromExcel2();
     if (rows.length === 0) {
-      return res.status(400).json({ ok: false, error: 'materials/预实验2被试方案.xlsx 中无数据或文件不存在，请确认文件路径与列名（被试编号、被试姓名、核心创意点与设定、高光画面描述、主打广告语、提交时间、是否自动保存）。' });
+      return res.status(400).json({
+        ok: false,
+        error: '文件中无有效数据行（每行需填写「被试编号」）。请确认：1）表头在第一行；2）列名与要求一致：被试编号、被试姓名、核心创意点与设定、高光画面描述、主打广告语、提交时间、是否自动保存。',
+      });
     }
     const submittedAt = nowStr();
     db.run('DELETE FROM pre_expert_scores');
@@ -59,7 +62,7 @@ adminRouter.post('/pre/import-from-excel', (req, res) => {
     res.json({ ok: true, imported: rows.length, message: `已从 预实验2被试方案.xlsx 导入 ${rows.length} 条方案，专家版可立即查看并打分。` });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ ok: false, error: e.message });
+    res.status(400).json({ ok: false, error: e.message || String(e) });
   }
 });
 

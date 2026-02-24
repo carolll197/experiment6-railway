@@ -3,18 +3,42 @@
  */
 import XLSX from 'xlsx';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const materialsDir = path.join(__dirname, '..', '..', 'materials');
 const excelPath = path.join(materialsDir, '预实验被试方案.xlsx');
-/** 预实验2 被试方案 Excel 路径（一键导入用） */
-const excelPath2 = path.join(materialsDir, '预实验2被试方案.xlsx');
+
+/** 预实验2 被试方案 Excel：优先相对于当前工作目录，其次相对于代码目录（便于本地与 Railway 部署） */
+function getPre2ExcelPath() {
+  const fileName = '预实验2被试方案.xlsx';
+  const fromCwd = path.join(process.cwd(), 'materials', fileName);
+  const fromLib = path.join(materialsDir, fileName);
+  if (fs.existsSync(fromCwd)) return fromCwd;
+  if (fs.existsSync(fromLib)) return fromLib;
+  throw new Error(`文件不存在。已尝试路径：\n1. ${fromCwd}\n2. ${fromLib}\n请将「${fileName}」放入项目根目录下的 materials 文件夹中。`);
+}
 
 function parseBool(v) {
   if (v === true || v === 1) return 1;
   if (v === '是' || String(v).trim() === '是') return 1;
   return 0;
+}
+
+/** 从一行对象中按多个可能的表头名取值（表头可能有空格或别名） */
+function cell(row, ...keys) {
+  for (const k of keys) {
+    if (row[k] != null && String(row[k]).trim() !== '') return String(row[k]).trim();
+  }
+  const trimmed = {};
+  for (const k of Object.keys(row)) {
+    trimmed[k.trim()] = row[k];
+  }
+  for (const k of keys) {
+    if (trimmed[k] != null && String(trimmed[k]).trim() !== '') return String(trimmed[k]).trim();
+  }
+  return '';
 }
 
 /**
@@ -54,37 +78,58 @@ export function getPrePlansFromExcel() {
 
 /**
  * 从 materials/预实验2被试方案.xlsx 读取方案（一键导入：覆盖数据库）
- * 列名同 getPrePlansFromExcel：被试编号、被试姓名、核心创意点与设定（或核心创意点与比喻/核心创意）、高光画面描述、主打广告语、提交时间、是否自动保存
+ * 列名：被试编号、被试姓名、核心创意点与设定（或核心创意点与比喻/核心创意）、高光画面描述、主打广告语、提交时间、是否自动保存（表头首行，可有空格）
  */
 export function getPrePlansFromExcel2() {
+  let resolvedPath;
   try {
-    const wb = XLSX.readFile(excelPath2);
+    resolvedPath = getPre2ExcelPath();
+  } catch (e) {
+    console.error('[prePlansExcel2]', e.message);
+    throw e;
+  }
+  try {
+    const wb = XLSX.readFile(resolvedPath);
     const sn = wb.SheetNames[0] || wb.SheetNames.find((s) => s.includes('被试')) || wb.SheetNames[0];
     const ws = wb.Sheets[sn];
     if (!ws) return [];
-    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    return rows.map((row, i) => {
-      const subject_id = row['被试编号'] != null ? String(row['被试编号']).trim() : '';
-      const name = row['被试姓名'] != null ? String(row['被试姓名']).trim() : '';
-      const submitted_at = row['提交时间'] != null ? String(row['提交时间']).trim() : '';
-      const is_auto_saved = parseBool(row['是否自动保存']);
-      const big_idea = row['核心创意点与设定'] != null ? String(row['核心创意点与设定']) : (row['核心创意点与比喻'] != null ? String(row['核心创意点与比喻']) : (row['核心创意'] != null ? String(row['核心创意']) : ''));
-      return {
-        id: i + 1,
+    let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    // 若第一行没有「被试编号」表头，尝试把第二行当表头（首行为标题的情况）
+    if (rows.length > 0) {
+      const firstKeys = Object.keys(rows[0]).map((k) => k.trim());
+      if (!firstKeys.includes('被试编号') && rows.length > 1) {
+        rows = XLSX.utils.sheet_to_json(ws, { defval: '', range: 1 });
+      }
+    }
+    const out = [];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const subject_id = cell(row, '被试编号');
+      if (!subject_id) continue;
+      const name = cell(row, '被试姓名') || '';
+      const submitted_at = cell(row, '提交时间') || '';
+      const is_auto_saved = parseBool(row['是否自动保存'] ?? row['是否自动保存 '] ?? '');
+      const big_idea = cell(row, '核心创意点与设定', '核心创意点与比喻', '核心创意');
+      const highlight_scene = cell(row, '高光画面描述');
+      const slogan = cell(row, '主打广告语');
+      out.push({
+        id: out.length + 1,
         subject_id,
         name,
-        big_idea,
-        highlight_scene: row['高光画面描述'] != null ? String(row['高光画面描述']) : '',
-        slogan: row['主打广告语'] != null ? String(row['主打广告语']) : '',
+        big_idea: big_idea || '',
+        highlight_scene,
+        slogan,
         submitted_at,
         is_auto_saved,
         start_time: submitted_at || null,
         end_time: submitted_at || null,
-      };
-    });
+      });
+    }
+    return out;
   } catch (e) {
+    if (e.code === 'ENOENT' || e.message?.includes('不存在')) throw e;
     console.error('[prePlansExcel2]', e.message);
-    return [];
+    throw new Error(`读取 Excel 失败：${e.message}。请确认表头在第一行，列名为：被试编号、被试姓名、核心创意点与设定、高光画面描述、主打广告语、提交时间、是否自动保存。`);
   }
 }
 
