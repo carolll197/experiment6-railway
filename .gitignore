@@ -6,8 +6,9 @@ frontend/dist/
 
 # Local SQLite DB（专家评分使用被试端提交的数据；本地/Excel 数据不上传）
 backend/data/*.db
-# 本地 Excel 收上的数据不上传
+# 本地 Excel 收上的数据不上传（预实验2 模板需入库以便 Railway 部署）
 materials/*.xlsx
+!materials/预实验2被试方案.xlsx
 
 # Env and secrets
 .env
