@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import XLSX from 'xlsx';
+import { getPrePlansFromExcel2 } from '../lib/prePlansExcel.js';
 
 export const adminRouter = Router();
 
@@ -24,9 +25,42 @@ adminRouter.delete('/pre/plans', (req, res) => {
   }
 });
 
-// 预实验 - 专家评分仅使用被试端提交的数据，不再支持从 Excel 导入覆盖
+// 预实验 - 一键导入：从 materials/预实验2被试方案.xlsx 读取并覆盖 pre_subject_plans，专家版同步显示并可打分
 adminRouter.post('/pre/import-from-excel', (req, res) => {
-  res.status(400).json({ ok: false, error: '专家评分仅使用被试端提交的数据，不再支持从 Excel 导入。请由被试通过系统提交方案。' });
+  try {
+    const db = req.app.get('db');
+    const rows = getPrePlansFromExcel2();
+    if (rows.length === 0) {
+      return res.status(400).json({ ok: false, error: 'materials/预实验2被试方案.xlsx 中无数据或文件不存在，请确认文件路径与列名（被试编号、被试姓名、核心创意点与设定、高光画面描述、主打广告语、提交时间、是否自动保存）。' });
+    }
+    const submittedAt = nowStr();
+    db.run('DELETE FROM pre_expert_scores');
+    db.run('DELETE FROM pre_subject_plans');
+    const ins = db.prepare(`
+      INSERT INTO pre_subject_plans (subject_id, name, target_audience, pain_point, insight, big_idea, rationale, highlight_scene, slogan, submitted_at, is_auto_saved, created_at, start_time, end_time)
+      VALUES (?, ?, '', '', '', ?, '', ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const r of rows) {
+      const subject_id = r.subject_id != null ? String(r.subject_id).trim() : '';
+      if (!subject_id) continue;
+      ins.run(
+        subject_id,
+        r.name ?? '',
+        r.big_idea ?? '',
+        r.highlight_scene ?? '',
+        r.slogan ?? '',
+        r.submitted_at || submittedAt,
+        r.is_auto_saved ? 1 : 0,
+        r.submitted_at || submittedAt,
+        r.start_time || r.submitted_at || submittedAt,
+        r.end_time || r.submitted_at || submittedAt
+      );
+    }
+    res.json({ ok: true, imported: rows.length, message: `已从 预实验2被试方案.xlsx 导入 ${rows.length} 条方案，专家版可立即查看并打分。` });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // 预实验 - 被试方案列表（来自数据库 pre_subject_plans，支持 keyword 筛选；专家无效信息从 DB 查）
