@@ -10,14 +10,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const materialsDir = path.join(__dirname, '..', '..', 'materials');
 const excelPath = path.join(materialsDir, '预实验被试方案.xlsx');
 
-/** 预实验2 被试方案 Excel：优先相对于当前工作目录，其次相对于代码目录（便于本地与 Railway 部署） */
+/** 预实验2 被试方案 Excel：优先相对于代码目录（部署稳定），其次相对于当前工作目录 */
 function getPre2ExcelPath() {
   const fileName = '预实验2被试方案.xlsx';
-  const fromCwd = path.join(process.cwd(), 'materials', fileName);
   const fromLib = path.join(materialsDir, fileName);
-  if (fs.existsSync(fromCwd)) return fromCwd;
+  const fromCwd = path.join(process.cwd(), 'materials', fileName);
   if (fs.existsSync(fromLib)) return fromLib;
-  throw new Error(`文件不存在。已尝试路径：\n1. ${fromCwd}\n2. ${fromLib}\n请将「${fileName}」放入项目根目录下的 materials 文件夹中。`);
+  if (fs.existsSync(fromCwd)) return fromCwd;
+  throw new Error(`文件不存在。已尝试路径：\n1. ${fromLib}\n2. ${fromCwd}\n请将「${fileName}」放入项目根目录下的 materials 文件夹中。`);
 }
 
 function parseBool(v) {
@@ -26,17 +26,22 @@ function parseBool(v) {
   return 0;
 }
 
-/** 从一行对象中按多个可能的表头名取值（表头可能有空格或别名） */
+/** 表头键规范化：去 BOM、首尾空格（Excel 有时会带 BOM 或空格导致列名对不上） */
+function normKey(k) {
+  if (k == null || typeof k !== 'string') return '';
+  return k.replace(/^\uFEFF/, '').trim();
+}
+
+/** 从一行对象中按多个可能的表头名取值（表头可能有空格、BOM 或别名） */
 function cell(row, ...keys) {
-  for (const k of keys) {
-    if (row[k] != null && String(row[k]).trim() !== '') return String(row[k]).trim();
-  }
-  const trimmed = {};
+  const byNorm = {};
   for (const k of Object.keys(row)) {
-    trimmed[k.trim()] = row[k];
+    const n = normKey(k);
+    if (n) byNorm[n] = row[k];
   }
   for (const k of keys) {
-    if (trimmed[k] != null && String(trimmed[k]).trim() !== '') return String(trimmed[k]).trim();
+    const val = byNorm[normKey(k)];
+    if (val != null && String(val).trim() !== '') return String(val).trim();
   }
   return '';
 }
@@ -96,7 +101,7 @@ export function getPrePlansFromExcel2() {
     let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
     // 若第一行没有「被试编号」表头，尝试把第二行当表头（首行为标题的情况）
     if (rows.length > 0) {
-      const firstKeys = Object.keys(rows[0]).map((k) => k.trim());
+      const firstKeys = Object.keys(rows[0]).map(normKey);
       if (!firstKeys.includes('被试编号') && rows.length > 1) {
         rows = XLSX.utils.sheet_to_json(ws, { defval: '', range: 1 });
       }
@@ -108,7 +113,7 @@ export function getPrePlansFromExcel2() {
       if (!subject_id) continue;
       const name = cell(row, '被试姓名') || '';
       const submitted_at = cell(row, '提交时间') || '';
-      const is_auto_saved = parseBool(row['是否自动保存'] ?? row['是否自动保存 '] ?? '');
+      const is_auto_saved = parseBool(cell(row, '是否自动保存') || '');
       const big_idea = cell(row, '核心创意点与设定', '核心创意点与比喻', '核心创意');
       const highlight_scene = cell(row, '高光画面描述');
       const slogan = cell(row, '主打广告语');
@@ -124,6 +129,10 @@ export function getPrePlansFromExcel2() {
         start_time: submitted_at || null,
         end_time: submitted_at || null,
       });
+    }
+    if (out.length === 0 && rows.length > 0) {
+      const detected = Object.keys(rows[0]).map(normKey).filter(Boolean).join('、');
+      throw new Error(`未解析到任何有效行（每行需填写「被试编号」）。当前检测到的表头：${detected || '(无)'}。请确认表头在第一行且列名包含：被试编号、被试姓名、核心创意点与设定、高光画面描述、主打广告语、提交时间、是否自动保存。`);
     }
     return out;
   } catch (e) {

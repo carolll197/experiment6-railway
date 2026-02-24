@@ -26,7 +26,6 @@ adminRouter.delete('/pre/plans', (req, res) => {
 });
 
 // 预实验 - 一键导入：从 materials/预实验2被试方案.xlsx 读取并覆盖 pre_subject_plans，专家版同步显示并可打分
-const PRE2_EXCEL_ERROR_MSG = 'materials/预实验2被试方案.xlsx 中无数据或文件不存在，请确认文件路径与列名（被试编号、被试姓名、核心创意点与设定、高光画面描述、主打广告语、提交时间、是否自动保存）。';
 adminRouter.post('/pre/import-from-excel', (req, res) => {
   try {
     const db = req.app.get('db');
@@ -34,7 +33,7 @@ adminRouter.post('/pre/import-from-excel', (req, res) => {
     if (rows.length === 0) {
       return res.status(400).json({
         ok: false,
-        error: PRE2_EXCEL_ERROR_MSG,
+        error: '文件中无有效数据行（每行需填写「被试编号」）。请确认：1）表头在第一行；2）列名与要求一致：被试编号、被试姓名、核心创意点与设定、高光画面描述、主打广告语、提交时间、是否自动保存。',
       });
     }
     const submittedAt = nowStr();
@@ -63,7 +62,7 @@ adminRouter.post('/pre/import-from-excel', (req, res) => {
     res.json({ ok: true, imported: rows.length, message: `已从 预实验2被试方案.xlsx 导入 ${rows.length} 条方案，专家版可立即查看并打分。` });
   } catch (e) {
     console.error(e);
-    res.status(400).json({ ok: false, error: PRE2_EXCEL_ERROR_MSG });
+    res.status(400).json({ ok: false, error: e.message || String(e) });
   }
 });
 
