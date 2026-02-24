@@ -42,7 +42,7 @@ const startTime = ref(null);
 const endTime = ref(null);
 
 function headers() {
-  return { 'Content-Type': 'application/json', 'X-Visitor-Id': visitorId };
+  return { 'Content-Type': 'application/json', 'X-Visitor-Id': visitorId.value ?? '' };
 }
 
 function onStepNext(nextStep) {
