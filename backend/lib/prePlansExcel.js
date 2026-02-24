@@ -11,6 +11,7 @@ const materialsDir = path.join(__dirname, '..', '..', 'materials');
 const excelPath = path.join(materialsDir, '预实验被试方案.xlsx');
 
 /** 预实验2 被试方案 Excel：优先相对于代码目录（部署稳定），其次相对于当前工作目录 */
+  if (fs.existsSync(fromCwd)) return fromCwd;
 function getPre2ExcelPath() {
   const fileName = '预实验2被试方案.xlsx';
   const fromLib = path.join(materialsDir, fileName);

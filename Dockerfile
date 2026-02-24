@@ -7,6 +7,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/package-lock.json backend/
 COPY frontend/package.json frontend/
+# 若存在 frontend/package.json 可在此增加一行以更好利用缓存：
+# COPY frontend/package.json frontend/
+
 
 # 安装依赖（root postinstall 会执行 frontend + backend 的 npm install）
 RUN npm install
