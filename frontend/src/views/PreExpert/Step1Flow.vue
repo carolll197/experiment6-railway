@@ -1,6 +1,6 @@
 <template>
-  <div class="page-wrap">
-    <h1 class="text-h1">流程说明</h1>
+  <div class="page-wrap flow-center">
+    <h1 class="text-h1 center">流程说明</h1>
     <div class="text-body" style="margin: 16px 0;">
       <p>欢迎进入正式评分阶段。在开始之前，请仔细阅读以下信息。您的评分将直接决定本项研究关于"人机协作创造力"的结论方向。</p>
       <p style="margin-top: 8px;">- 1.评估对象：您将看到一系列针对虚拟品牌的广告创意策划文案，这些作品的作者信息已匿名处理。</p>
@@ -50,3 +50,18 @@ onUnmounted(() => {
 
 defineEmits(['next']);
 </script>
+
+<style scoped>
+.page-wrap.flow-center {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+.page-wrap.flow-center .text-body,
+.page-wrap.flow-center .p-module {
+  text-align: left;
+}
+.page-wrap.flow-center .flex {
+  justify-content: center;
+}
+</style>

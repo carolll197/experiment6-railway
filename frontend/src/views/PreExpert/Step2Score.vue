@@ -6,7 +6,7 @@
           <h2 class="brief-eval-section-title">创意简报</h2>
           <BriefContent :content="briefQuestion1" />
         </div>
-        <div class="left-bottom file-container panel-border">
+        <div class="left-bottom file-container panel-border plan-big">
           <div class="plan-header-row">
             <div class="text-score counter">{{ currentIndex + 1 }}/{{ plans.length }}</div>
             <button type="button" class="btn-refresh" :disabled="loadingPlans" @click="refreshPlans">{{ loadingPlans ? '刷新中…' : '刷新方案列表' }}</button>
@@ -243,6 +243,11 @@ onMounted(() => {
 .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
 .plan-blocks p { margin: 2px 0; font-family: "SimSun", "Songti SC", serif; }
 .plan-blocks .plan-text { white-space: pre-wrap; word-break: break-word; }
+/* 专家打分页被试方案整体字号调大两号（正文14px -> 18px） */
+.plan-big .plan-blocks { font-size: 18px; }
+.plan-big .plan-blocks p { font-size: 18px; }
+.plan-big .plan-blocks .plan-text { font-size: 18px; }
+.plan-big .text-h3 { font-size: 17px; }
 .invalid-wrap { margin-top: 16px; }
 .right-col {
   position: sticky;
