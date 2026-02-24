@@ -7,6 +7,7 @@
           <button type="button" class="btn-primary" :disabled="importingPrePlans" @click="importPrePlansFromExcel">
             {{ importingPrePlans ? '导入中…' : '一键导入Excel' }}
           </button>
+          <span class="top-hint">（从 materials/预实验2被试方案.xlsx 读取并覆盖现有数据，专家版可立即查看并打分）</span>
           <a :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
           <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanSubjectIds.size === 0" @click="deleteSelectedPrePlans">删除选中方案</button>
         </template>
@@ -242,6 +243,7 @@ function importPrePlansFromExcel() {
       if (data.ok) {
         alert(data.message || `已导入 ${data.imported ?? 0} 条方案，专家版可立即查看并打分。`);
         fetchPlans();
+        fetchScores();
         fetchExpertInvalidSubjects();
       } else {
         alert(data.error || '导入失败');
@@ -461,7 +463,12 @@ function sortScoreBy(key) {
   margin-bottom: 10px;
 }
 .top-bar .text-h1 { margin: 0; }
-.top-actions { display: flex; gap: 20px; }
+.top-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.top-hint {
+  font-size: 12px;
+  color: var(--color-hint);
+  max-width: 420px;
+}
 .btn-primary {
   min-width: 120px;
   height: 36px;

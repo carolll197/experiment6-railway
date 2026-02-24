@@ -7,7 +7,10 @@
           <BriefContent :content="briefQuestion1" />
         </div>
         <div class="left-bottom file-container panel-border">
-          <div class="text-score counter">{{ currentIndex + 1 }}/{{ plans.length }}</div>
+          <div class="plan-header-row">
+            <div class="text-score counter">{{ currentIndex + 1 }}/{{ plans.length }}</div>
+            <button type="button" class="btn-refresh" :disabled="loadingPlans" @click="refreshPlans">{{ loadingPlans ? '刷新中…' : '刷新方案列表' }}</button>
+          </div>
           <h3 class="text-h3" style="margin: 8px 0;">被试编号：{{ currentPlan ? currentPlan.subject_id : '—' }}</h3>
           <div v-if="currentPlan" class="plan-blocks text-body">
             <p><strong>核心创意点与设定</strong></p>
@@ -68,6 +71,7 @@ const emit = defineEmits(['next']);
 
 const plans = ref([]);
 const currentIndex = ref(0);
+const loadingPlans = ref(false);
 const scoresBySubject = ref({});
 const invalidBySubject = ref({});
 
@@ -171,14 +175,22 @@ watch(
   { deep: true }
 );
 
-onMounted(() => {
+function fetchPlans() {
+  loadingPlans.value = true;
   fetch('/api/pre-expert/plans')
     .then((r) => r.json())
     .then((data) => {
       plans.value = Array.isArray(data) ? data : [];
       if (plans.value.length === 0) emit('next');
     })
-    .catch(() => {});
+    .catch(() => {})
+    .finally(() => { loadingPlans.value = false; });
+}
+function refreshPlans() {
+  fetchPlans();
+}
+onMounted(() => {
+  fetchPlans();
 });
 </script>
 
@@ -210,11 +222,25 @@ onMounted(() => {
   border: 1px solid var(--color-border-line);
 }
 .left-bottom { position: relative; }
-.counter {
-  position: absolute;
-  top: 8px;
-  right: 16px;
+.plan-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 8px;
 }
+.counter { flex-shrink: 0; }
+.btn-refresh {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--color-secondary);
+  background: var(--color-page-bg);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.btn-refresh:hover:not(:disabled) { background: var(--color-input-bg); }
+.btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
 .plan-blocks p { margin: 2px 0; font-family: "SimSun", "Songti SC", serif; }
 .plan-blocks .plan-text { white-space: pre-wrap; word-break: break-word; }
 .invalid-wrap { margin-top: 16px; }
