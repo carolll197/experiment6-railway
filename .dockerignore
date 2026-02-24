@@ -1,0 +1,11 @@
+# 避免把本地 node_modules、构建产物复制进镜像，加快 COPY 并减小镜像
+node_modules
+frontend/node_modules
+backend/node_modules
+frontend/dist
+.git
+.gitignore
+*.log
+.env
+.env.*
+.DS_Store
