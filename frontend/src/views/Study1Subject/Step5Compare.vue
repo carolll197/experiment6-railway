@@ -116,15 +116,15 @@ import { creativityScaleItems } from '../../content/preExperiment.js';
 const props = defineProps({
   phase1Plan: { type: Object, default: () => ({}) },
   subjectId: String,
-  initialScores: { type: Object, default: null },
-  initialSubmitStep: { type: Boolean, default: false },
-  initialChosenSide: { type: String, default: '' },
-  initialLeftFirst: { type: Boolean, default: null },
 });
 const emit = defineEmits(['next', 'save']);
 
-// 恢复或随机左右顺序
-const leftFirst = ref(props.initialLeftFirst !== null && props.initialLeftFirst !== undefined ? props.initialLeftFirst : Math.random() >= 0.5);
+// 每次进入/刷新都随机左右顺序，下方评分顺序与中间一致
+const leftFirst = ref(Math.random() >= 0.5);
+onMounted(() => {
+  leftFirst.value = Math.random() >= 0.5;
+});
+
 const leftLabel = computed(() => (leftFirst.value ? '您的作品' : 'AI作品'));
 const rightLabel = computed(() => (leftFirst.value ? 'AI作品' : '您的作品'));
 const leftOptionValue = computed(() => (leftFirst.value ? 'yours' : 'ai'));
@@ -133,17 +133,14 @@ const rightOptionValue = computed(() => (leftFirst.value ? 'ai' : 'yours'));
 const leftWork = computed(() => (leftFirst.value ? props.phase1Plan : study1AiWork));
 const rightWork = computed(() => (leftFirst.value ? study1AiWork : props.phase1Plan));
 
-onMounted(() => {
-  if (props.initialLeftFirst === null || props.initialLeftFirst === undefined) leftFirst.value = Math.random() >= 0.5;
-});
-
 const briefExpanded = ref(false);
 const briefPreview = computed(() => {
   const s = briefQuestion1.replace(/\n/g, ' ').slice(0, 80);
   return s + (briefQuestion1.length > 80 ? '…' : '');
 });
 
-const scores = ref(props.initialScores && typeof props.initialScores === 'object' ? { ...props.initialScores } : {});
+// 不恢复评分：每次挂载都是空评分
+const scores = ref({});
 function getScore(questionNo, which) {
   const k = `${questionNo}_${which}`;
   return scores.value[k] ?? null;
@@ -159,8 +156,8 @@ const scoresFilled = computed(() => {
   return true;
 });
 
-const submitStep = ref(!!props.initialSubmitStep);
-const chosenSide = ref(props.initialChosenSide || '');
+const submitStep = ref(false);
+const chosenSide = ref('');
 const radioName = 'phase1_choice_' + Math.random();
 
 let saveTimer = null;

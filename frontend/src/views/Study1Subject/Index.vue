@@ -14,14 +14,11 @@
       @next="onPhase1Done"
       @save="onStep4Save"
     />
+    <!-- 比较页：每次进入/刷新都随机左右顺序，不恢复评分，下方评分顺序与中间一致 -->
     <Step5Compare
       v-else-if="step === 5"
       :phase1-plan="phase1Plan"
       :subject-id="subjectId"
-      :initial-scores="progressData.step5Scores"
-      :initial-submit-step="progressData.step5SubmitStep"
-      :initial-chosen-side="progressData.step5ChosenSide"
-      :initial-left-first="restoredStep === 5 ? progressData.step5LeftFirst : undefined"
       @next="onStepNext(6)"
       @save="onStep5Save"
     />
@@ -52,8 +49,6 @@ const phase1Plan = ref({});
 const progressData = ref({});
 const startTime = ref(null);
 const endTime = ref(null);
-/** 仅当从服务器恢复进度时存在；用于区分「本次会话内从步骤4进入步骤5」与「刷新后恢复在步骤5」 */
-const restoredStep = ref(null);
 
 function headers() {
   return { 'Content-Type': 'application/json', 'X-Visitor-Id': visitorId.value ?? '' };
@@ -136,7 +131,6 @@ onMounted(() => {
       }
       if (data.step != null && data.step > 0) {
         step.value = data.step;
-        restoredStep.value = data.step;
         if (data.subjectId != null) subjectId.value = data.subjectId;
         if (data.name != null) name.value = data.name;
         if (data.data && typeof data.data === 'object') {
