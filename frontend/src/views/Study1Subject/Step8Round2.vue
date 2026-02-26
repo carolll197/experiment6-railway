@@ -3,7 +3,7 @@
     <div v-if="innerStep === 0" class="issue-wrap">
       <div class="timer-bar text-score">{{ timeText }}</div>
       <div class="timer-note text-hint italic" style="text-align: center; font-size: 12px; margin-bottom: 8px;">倒计时结束将自动保存并提交已填内容</div>
-      <p class="text-hint center" style="margin: 16px 0;">目前为"第2题（共两题）"，每道题目您均有10分钟时间作答。产出要求与之前相同。</p>
+      <p class="text-hint center" style="margin: 16px 0;">您有10分钟时间作答。产出要求同环节一。</p>
       <div class="file-container panel-border brief-block">
         <h2 class="brief-eval-section-title">创意简报</h2>
         <BriefContent :content="briefQuestion3FullText" />
@@ -145,8 +145,8 @@ function submitPlan(isAutoSaved) {
   const payload = {
     subject_id: props.subjectId,
     name: props.name,
-    phase: '环节二题目3',
-    question_no: 3,
+    phase: '环节二',
+    question_no: 1,
     big_idea: form.value.big_idea,
     highlight_scene: form.value.highlight_scene,
     slogan: form.value.slogan,

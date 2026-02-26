@@ -6,6 +6,7 @@
       <router-link to="/pre-expert">预实验-专家版</router-link>
       <router-link to="/pre-admin">预实验-主试版</router-link>
       <router-link to="/study1-subject">研究一-被试版</router-link>
+      <router-link to="/study1-expert">研究一-专家版</router-link>
       <router-link to="/study1-admin">研究一-主试版</router-link>
     </nav>
   </div>

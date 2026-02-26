@@ -512,6 +512,90 @@ adminRouter.delete('/study1/phase1-choices', (req, res) => {
   }
 });
 
+// 研究一 - 专家评分列表（支持 keyword / expertName 筛选）
+adminRouter.get('/study1/expert-scores', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, expertName } = req.query;
+    const nameSubquery = `(SELECT name FROM study1_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1)`;
+    let sql = `SELECT s.*, ${nameSubquery} AS subject_name FROM study1_expert_scores s WHERE 1=1`;
+    const params = [];
+    if (keyword && String(keyword).trim()) {
+      const k = `%${String(keyword).trim()}%`;
+      sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`;
+      params.push(k, k);
+    }
+    if (expertName && String(expertName).trim()) {
+      sql += ` AND s.expert_name LIKE ?`;
+      params.push(`%${String(expertName).trim()}%`);
+    }
+    sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
+    const rows = db.prepare(sql).all(...params);
+    res.json(rows.map((r) => ({ ...r, subject_name: r.subject_name ?? '' })));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 研究一 - 批量删除专家评分（按 id 删除）
+adminRouter.delete('/study1/expert-scores', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM study1_expert_scores WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 导出研究一专家评分 Excel
+adminRouter.get('/export/study1-expert-scores', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, expertName } = req.query;
+    const nameSubquery = `(SELECT name FROM study1_subject_plans p WHERE p.subject_id = s.subject_id LIMIT 1)`;
+    let sql = `SELECT s.*, ${nameSubquery} AS subject_name FROM study1_expert_scores s WHERE 1=1`;
+    const params = [];
+    if (keyword && String(keyword).trim()) {
+      const k = `%${String(keyword).trim()}%`;
+      sql += ` AND (s.subject_id LIKE ? OR s.expert_name LIKE ?)`;
+      params.push(k, k);
+    }
+    if (expertName && String(expertName).trim()) {
+      sql += ` AND s.expert_name LIKE ?`;
+      params.push(`%${String(expertName).trim()}%`);
+    }
+    sql += ` ORDER BY s.subject_id, s.expert_name, s.question_no`;
+    const rows = db.prepare(sql).all(...params);
+    const ws = XLSX.utils.json_to_sheet(
+      rows.map((r) => ({
+        被试编号: r.subject_id,
+        被试姓名: r.subject_name ?? '',
+        专家姓名: r.expert_name,
+        题号: r.question_no,
+        分数: r.score,
+        是否标记无效: r.is_invalid ? '是' : '否',
+        打分时间: r.scored_at,
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '研究一专家评分');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study1_expert_scores.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 导出研究一环节一打分（与筛选同步：keyword；含被试姓名）
 adminRouter.get('/export/study1-phase1-scores', (req, res) => {
   try {

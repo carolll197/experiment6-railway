@@ -27,6 +27,11 @@ const routes = [
     component: () => import('./views/Study1Subject/Index.vue'),
   },
   {
+    path: '/study1-expert',
+    name: 'Study1Expert',
+    component: () => import('./views/Study1Expert/Index.vue'),
+  },
+  {
     path: '/study1-admin',
     name: 'Study1Admin',
     component: () => import('./views/Study1Admin/Index.vue'),

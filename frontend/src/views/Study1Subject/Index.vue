@@ -25,8 +25,7 @@
       @next="onStepNext(6)"
       @save="onStep5Save"
     />
-    <Step6Intro2 v-else-if="step === 6" @next="onStepNext(7)" />
-    <Step7Round1 v-else-if="step === 7" :subject-id="subjectId" :name="name" :initial-state="progressData.step7" @next="onStepNext(8)" @save="onStep7Save" />
+    <Step6Intro2 v-else-if="step === 6" @next="onStepNext(8)" />
     <Step8Round2 v-else-if="step === 8" :subject-id="subjectId" :name="name" :initial-state="progressData.step8" @next="onStep8Next" @save="onStep8Save" />
     <Step9Thanks v-else-if="step === 9" />
   </div>
@@ -41,7 +40,6 @@ import Step3Intro1 from './Step3Intro1.vue';
 import Step4Creative1 from './Step4Creative1.vue';
 import Step5Compare from './Step5Compare.vue';
 import Step6Intro2 from './Step6Intro2.vue';
-import Step7Round1 from './Step7Round1.vue';
 import Step8Round2 from './Step8Round2.vue';
 import Step9Thanks from './Step9Thanks.vue';
 import { useVisitorId } from '../../composables/useVisitorId.js';
@@ -90,9 +88,6 @@ function onStep5Save(payload) {
     step5ChosenSide: payload?.step5ChosenSide,
     step5LeftFirst: payload?.step5LeftFirst,
   });
-}
-function onStep7Save(payload) {
-  saveProgress(7, { step7: payload });
 }
 function onStep8Save(payload) {
   saveProgress(8, { step8: payload });

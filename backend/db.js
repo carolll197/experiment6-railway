@@ -128,6 +128,15 @@ function runSchema() {
     scores_json TEXT,
     created_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS study1_expert_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id TEXT NOT NULL,
+    expert_name TEXT NOT NULL,
+    question_no INTEGER NOT NULL,
+    score INTEGER NOT NULL,
+    is_invalid INTEGER DEFAULT 0,
+    scored_at TEXT
+  );
   CREATE TABLE IF NOT EXISTS visitor_progress (
     visitor_id TEXT NOT NULL,
     flow TEXT NOT NULL,

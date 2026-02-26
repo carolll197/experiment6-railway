@@ -3,17 +3,22 @@
     <header class="top-bar panel-border">
       <h1 class="text-h1 left">广告创意研究实验数据管理平台（研究一）</h1>
       <div class="top-actions">
-        <template v-if="filters.dataType === 'plans'">
-          <a :href="exportPlansUrlWithFilter" class="btn-primary" download>导出方案</a>
-          <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanIds.size === 0" @click="deleteSelectedStudy1Plans">删除选中方案</button>
-        </template>
-        <template v-else-if="filters.dataType === 'cse'">
-          <a :href="exportCseUrlWithFilter" class="btn-primary" download>导出CSE量表数据</a>
-          <button type="button" class="btn-primary btn-danger" :disabled="selectedCseIds.size === 0" @click="deleteSelectedCseData">删除选中数据</button>
+        <template v-if="filters.dataType === 'plans-phase1'">
+          <a :href="exportPlansPhase1Url" class="btn-primary" download>导出环节一方案</a>
+          <a :href="exportExpertScoresUrl" class="btn-primary" download>导出专家评分</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanIds.size === 0" @click="deleteSelectedPlans">删除选中方案</button>
         </template>
         <template v-else-if="filters.dataType === 'phase1-choices'">
-          <a :href="exportPhase1ScoresUrlWithFilter" class="btn-primary" download>导出环节一打分</a>
+          <a :href="exportPhase1ScoresUrl" class="btn-primary" download>导出环节一打分</a>
           <button type="button" class="btn-primary btn-danger" :disabled="selectedChoiceSubjectIds.size === 0" @click="deleteSelectedPhase1Choices">删除选中记录</button>
+        </template>
+        <template v-else-if="filters.dataType === 'plans-phase2'">
+          <a :href="exportPlansPhase2Url" class="btn-primary" download>导出环节二作品</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedPlanIds.size === 0" @click="deleteSelectedPlans">删除选中方案</button>
+        </template>
+        <template v-else-if="filters.dataType === 'cse'">
+          <a :href="exportCseUrl" class="btn-primary" download>导出CSE量表数据</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedCseIds.size === 0" @click="deleteSelectedCseData">删除选中数据</button>
         </template>
       </div>
     </header>
@@ -21,16 +26,12 @@
       <aside class="filter-panel panel-border">
         <h2 class="text-h2 center">数据筛选（研究一）</h2>
         <div class="filter-form">
-          <label class="filter-label">实验类型</label>
-          <select v-model="filters.experimentType" class="filter-select" disabled>
-            <option value="study1">研究一</option>
-          </select>
-
           <label class="filter-label">数据类型</label>
           <select v-model="filters.dataType" class="filter-select">
-            <option value="plans">被试方案</option>
+            <option value="plans-phase1">环节一被试方案</option>
+            <option value="phase1-choices">环节一被试评分</option>
+            <option value="plans-phase2">环节二作品</option>
             <option value="cse">CSE量表数据</option>
-            <option value="phase1-choices">环节一选择与打分</option>
           </select>
 
           <label class="filter-label">被试编号/姓名</label>
@@ -41,36 +42,34 @@
             placeholder="模糊搜索"
           />
 
-          <label class="filter-label">数据状态</label>
-          <select class="filter-select" disabled>
-            <option value="">全部</option>
-          </select>
-
-          <label class="filter-label">创作环节</label>
-          <select v-model="filters.phase" class="filter-select">
-            <option value="">全部</option>
-            <option value="环节一">环节一</option>
-            <option value="环节二题目2">环节二题目2</option>
-            <option value="环节二题目3">环节二题目3</option>
-          </select>
+          <template v-if="filters.dataType === 'plans-phase1'">
+            <label class="filter-label">专家姓名</label>
+            <input
+              v-model="filters.expertName"
+              type="text"
+              class="filter-input"
+              placeholder="筛选专家姓名"
+            />
+          </template>
         </div>
       </aside>
       <section class="table-panel panel-border">
-        <!-- 被试方案 -->
-        <template v-if="filters.dataType === 'plans'">
-          <div v-if="plans.length === 0" class="empty-hint text-hint center">暂无符合条件的数据</div>
+
+        <!-- 环节一被试方案（含专家评分 + 被试选择） -->
+        <template v-if="filters.dataType === 'plans-phase1'">
+          <div v-if="plansPhase1.length === 0" class="empty-hint text-hint center">暂无符合条件的数据</div>
           <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th :colspan="planColumns.length + 1" class="text-table-head">研究一/被试方案</th>
+                  <th :colspan="phase1Columns.length + 1" class="text-table-head">研究一/环节一被试方案</th>
                 </tr>
                 <tr>
                   <th class="text-table-head th-checkbox">
-                    <input type="checkbox" :checked="allStudy1PlansSelected" :indeterminate="someStudy1PlansSelected" @change="toggleAllStudy1Plans" />
+                    <input type="checkbox" :checked="allPhase1PlansSelected" :indeterminate="somePhase1PlansSelected" @change="toggleAllPlans(paginatedPhase1)" />
                   </th>
                   <th
-                    v-for="c in planColumns"
+                    v-for="c in phase1Columns"
                     :key="c.key"
                     class="text-table-head th-sort"
                     @click="toggleSort(c.key)"
@@ -81,88 +80,44 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="r in paginatedPlans" :key="r.id">
+                <tr v-for="r in paginatedPhase1" :key="r.id">
                   <td class="td-checkbox">
-                    <input type="checkbox" :checked="selectedPlanIds.has(r.id)" @change="toggleStudy1Plan(r.id)" />
+                    <input type="checkbox" :checked="selectedPlanIds.has(r.id)" @change="togglePlanId(r.id)" />
                   </td>
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.name || '—' }}</td>
-                  <td>{{ r.phase }}</td>
-                  <td>{{ r.question_no }}</td>
                   <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
                   <td class="cell-body">{{ r.highlight_scene }}</td>
                   <td class="cell-body">{{ r.slogan }}</td>
-                  <td>{{ formatBeijingTime(r.start_time) }}</td>
-                  <td>{{ formatBeijingTime(r.end_time) }}</td>
                   <td>{{ formatBeijingTime(r.submitted_at) }}</td>
                   <td>{{ r.is_auto_saved ? '是' : '否' }}</td>
                   <td>{{ getChoice(r.subject_id) }}</td>
+                  <td class="cell-body cell-expert-scores">{{ getExpertScoreSummary(r.subject_id) }}</td>
                 </tr>
               </tbody>
             </table>
-            <div v-if="planTotal > pageSize" class="pagination text-score">
+            <div v-if="phase1Total > pageSize" class="pagination text-score">
               <button type="button" class="page-btn" :disabled="page <= 1" @click="page = Math.max(1, page - 1)">上一页</button>
-              <span>{{ page }} / {{ totalPages }}</span>
-              <button type="button" class="page-btn" :disabled="page >= totalPages" @click="page = Math.min(totalPages, page + 1)">下一页</button>
+              <span>{{ page }} / {{ phase1TotalPages }}</span>
+              <button type="button" class="page-btn" :disabled="page >= phase1TotalPages" @click="page = Math.min(phase1TotalPages, page + 1)">下一页</button>
             </div>
           </div>
         </template>
-        <!-- CSE量表数据（与其他表格同格式：被试编号 + 题1～题4 及打分） -->
-        <template v-else-if="filters.dataType === 'cse'">
-          <div v-if="cseList.length === 0" class="empty-hint text-hint center">暂无CSE量表数据</div>
-          <div v-else class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th :colspan="7" class="text-table-head">研究一/CSE量表数据</th>
-                </tr>
-                <tr>
-                  <th class="text-table-head th-checkbox">
-                    <input type="checkbox" :checked="allCseSelected" :indeterminate="someCseSelected" @change="toggleAllCse" />
-                  </th>
-                  <th class="text-table-head th-sort" @click="toggleSortCse('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
-                  <th class="text-table-head">被试姓名</th>
-                  <th class="text-table-head">题1</th>
-                  <th class="text-table-head">题2</th>
-                  <th class="text-table-head">题3</th>
-                  <th class="text-table-head">题4</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(r, idx) in paginatedCse" :key="r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx">
-                  <td class="td-checkbox">
-                    <input type="checkbox" :checked="selectedCseIds.has(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx)" @change="toggleCse(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx)" />
-                  </td>
-                  <td>{{ r.subject_id }}</td>
-                  <td class="cell-name">{{ r.name || '—' }}</td>
-                  <td class="text-score">{{ r.q1 != null ? r.q1 : '—' }}</td>
-                  <td class="text-score">{{ r.q2 != null ? r.q2 : '—' }}</td>
-                  <td class="text-score">{{ r.q3 != null ? r.q3 : '—' }}</td>
-                  <td class="text-score">{{ r.q4 != null ? r.q4 : '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div v-if="cseTotal > pageSize" class="pagination text-score">
-              <button type="button" class="page-btn" :disabled="page <= 1" @click="page = Math.max(1, page - 1)">上一页</button>
-              <span>{{ page }} / {{ cseTotalPages }}</span>
-              <button type="button" class="page-btn" :disabled="page >= cseTotalPages" @click="page = Math.min(cseTotalPages, page + 1)">下一页</button>
-            </div>
-          </div>
-        </template>
-        <!-- 环节一选择与打分：纵向11题，横向您的作品/AI作品，按题号呈现 -->
+
+        <!-- 环节一被试评分（被试给自己作品和AI作品打分） -->
         <template v-else-if="filters.dataType === 'phase1-choices'">
-          <div v-if="choices.length === 0" class="empty-hint text-hint center">暂无环节一选择数据</div>
+          <div v-if="choices.length === 0" class="empty-hint text-hint center">暂无环节一评分数据</div>
           <div v-else class="table-wrap phase1-scores-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th :colspan="4 + 11 * 2" class="text-table-head">研究一/环节一选择与打分（创造力评价11题）</th>
+                  <th :colspan="4 + 11 * 2" class="text-table-head">研究一/环节一被试评分（创造力评价11题）</th>
                 </tr>
                 <tr>
                   <th class="text-table-head th-checkbox">
                     <input type="checkbox" :checked="allChoicesSelected" :indeterminate="someChoicesSelected" @change="toggleAllChoices" />
                   </th>
-                  <th class="text-table-head th-sort" @click="toggleSortChoice('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                  <th class="text-table-head th-sort" @click="toggleSort('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                   <th class="text-table-head">被试姓名</th>
                   <th class="text-table-head">最终提交作品</th>
                   <th v-for="n in 11" :key="n" colspan="2" class="text-table-head">题{{ n }}</th>
@@ -200,6 +155,97 @@
             </div>
           </div>
         </template>
+
+        <!-- 环节二作品 -->
+        <template v-else-if="filters.dataType === 'plans-phase2'">
+          <div v-if="plansPhase2.length === 0" class="empty-hint text-hint center">暂无环节二作品数据</div>
+          <div v-else class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th :colspan="phase2Columns.length + 1" class="text-table-head">研究一/环节二作品</th>
+                </tr>
+                <tr>
+                  <th class="text-table-head th-checkbox">
+                    <input type="checkbox" :checked="allPhase2PlansSelected" :indeterminate="somePhase2PlansSelected" @change="toggleAllPlans(paginatedPhase2)" />
+                  </th>
+                  <th
+                    v-for="c in phase2Columns"
+                    :key="c.key"
+                    class="text-table-head th-sort"
+                    @click="toggleSort(c.key)"
+                  >
+                    {{ c.label }}
+                    <span v-if="sortKey === c.key" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in paginatedPhase2" :key="r.id">
+                  <td class="td-checkbox">
+                    <input type="checkbox" :checked="selectedPlanIds.has(r.id)" @change="togglePlanId(r.id)" />
+                  </td>
+                  <td>{{ r.subject_id }}</td>
+                  <td class="cell-name">{{ r.name || '—' }}</td>
+                  <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
+                  <td class="cell-body">{{ r.highlight_scene }}</td>
+                  <td class="cell-body">{{ r.slogan }}</td>
+                  <td>{{ formatBeijingTime(r.submitted_at) }}</td>
+                  <td>{{ r.is_auto_saved ? '是' : '否' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="phase2Total > pageSize" class="pagination text-score">
+              <button type="button" class="page-btn" :disabled="page <= 1" @click="page = Math.max(1, page - 1)">上一页</button>
+              <span>{{ page }} / {{ phase2TotalPages }}</span>
+              <button type="button" class="page-btn" :disabled="page >= phase2TotalPages" @click="page = Math.min(phase2TotalPages, page + 1)">下一页</button>
+            </div>
+          </div>
+        </template>
+
+        <!-- CSE量表数据 -->
+        <template v-else-if="filters.dataType === 'cse'">
+          <div v-if="cseList.length === 0" class="empty-hint text-hint center">暂无CSE量表数据</div>
+          <div v-else class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th :colspan="7" class="text-table-head">研究一/CSE量表数据</th>
+                </tr>
+                <tr>
+                  <th class="text-table-head th-checkbox">
+                    <input type="checkbox" :checked="allCseSelected" :indeterminate="someCseSelected" @change="toggleAllCse" />
+                  </th>
+                  <th class="text-table-head th-sort" @click="toggleSort('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                  <th class="text-table-head">被试姓名</th>
+                  <th class="text-table-head">题1</th>
+                  <th class="text-table-head">题2</th>
+                  <th class="text-table-head">题3</th>
+                  <th class="text-table-head">题4</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(r, idx) in paginatedCse" :key="r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx">
+                  <td class="td-checkbox">
+                    <input type="checkbox" :checked="selectedCseIds.has(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx)" @change="toggleCse(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx)" />
+                  </td>
+                  <td>{{ r.subject_id }}</td>
+                  <td class="cell-name">{{ r.name || '—' }}</td>
+                  <td class="text-score">{{ r.q1 != null ? r.q1 : '—' }}</td>
+                  <td class="text-score">{{ r.q2 != null ? r.q2 : '—' }}</td>
+                  <td class="text-score">{{ r.q3 != null ? r.q3 : '—' }}</td>
+                  <td class="text-score">{{ r.q4 != null ? r.q4 : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="cseTotal > pageSize" class="pagination text-score">
+              <button type="button" class="page-btn" :disabled="page <= 1" @click="page = Math.max(1, page - 1)">上一页</button>
+              <span>{{ page }} / {{ cseTotalPages }}</span>
+              <button type="button" class="page-btn" :disabled="page >= cseTotalPages" @click="page = Math.min(cseTotalPages, page + 1)">下一页</button>
+            </div>
+          </div>
+        </template>
+
       </section>
     </div>
   </div>
@@ -210,15 +256,16 @@ import { ref, computed, watch } from 'vue';
 import { formatBeijingTime } from '../../utils/formatBeijingTime.js';
 
 const filters = ref({
-  experimentType: 'study1',
-  dataType: 'plans',
+  dataType: 'plans-phase1',
   keyword: '',
-  phase: '',
+  expertName: '',
 });
 
-const plans = ref([]);
+const plansPhase1 = ref([]);
+const plansPhase2 = ref([]);
 const choices = ref([]);
 const cseList = ref([]);
+const expertScores = ref([]);
 const sortKey = ref('');
 const sortOrder = ref('asc');
 const page = ref(1);
@@ -227,182 +274,124 @@ const selectedPlanIds = ref(new Set());
 const selectedCseIds = ref(new Set());
 const selectedChoiceSubjectIds = ref(new Set());
 
-const allStudy1PlansSelected = computed(() => paginatedPlans.value.length > 0 && paginatedPlans.value.every((r) => selectedPlanIds.value.has(r.id)));
-const someStudy1PlansSelected = computed(() => paginatedPlans.value.some((r) => selectedPlanIds.value.has(r.id)) && !allStudy1PlansSelected.value);
-
-const allCseSelected = computed(() => paginatedCse.value.length > 0 && paginatedCse.value.every((r) => selectedCseIds.value.has(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + 0)));
-const someCseSelected = computed(() => paginatedCse.value.some((r) => selectedCseIds.value.has(r.id != null ? r.id : 'cse-' + r.subject_id + '-' + 0)) && !allCseSelected.value);
-
-const allChoicesSelected = computed(() => paginatedChoices.value.length > 0 && paginatedChoices.value.every((r) => selectedChoiceSubjectIds.value.has(r.subject_id)));
-const someChoicesSelected = computed(() => paginatedChoices.value.some((r) => selectedChoiceSubjectIds.value.has(r.subject_id)) && !allChoicesSelected.value);
-
-function toggleStudy1Plan(id) {
-  const set = new Set(selectedPlanIds.value);
-  if (set.has(id)) set.delete(id);
-  else set.add(id);
-  selectedPlanIds.value = set;
-}
-function toggleAllStudy1Plans() {
-  if (allStudy1PlansSelected.value) selectedPlanIds.value = new Set();
-  else selectedPlanIds.value = new Set(paginatedPlans.value.map((r) => r.id));
-}
-function deleteSelectedStudy1Plans() {
-  if (selectedPlanIds.value.size === 0) return;
-  if (!confirm(`确定删除选中的 ${selectedPlanIds.value.size} 条方案记录吗？`)) return;
-  fetch('/api/admin/study1/plans', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids: [...selectedPlanIds.value] }),
-  })
-    .then((r) => r.json())
-    .then((data) => {
-      if (data.ok) {
-        selectedPlanIds.value = new Set();
-        fetchPlans();
-        fetchChoices();
-      }
-    })
-    .catch(() => {});
-}
-
-function toggleCse(id) {
-  const set = new Set(selectedCseIds.value);
-  if (set.has(id)) set.delete(id);
-  else set.add(id);
-  selectedCseIds.value = set;
-}
-function toggleAllCse() {
-  if (allCseSelected.value) selectedCseIds.value = new Set();
-  else selectedCseIds.value = new Set(paginatedCse.value.map((r, idx) => r.id != null ? r.id : 'cse-' + r.subject_id + '-' + idx));
-}
-function deleteSelectedCseData() {
-  if (selectedCseIds.value.size === 0) return;
-  if (!confirm(`确定删除选中的 ${selectedCseIds.value.size} 条CSE量表数据吗？`)) return;
-  // 过滤出有效的数字ID
-  const validIds = [...selectedCseIds.value].filter(id => typeof id === 'number' || !isNaN(Number(id))).map(Number);
-  fetch('/api/admin/study1/cse', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids: validIds }),
-  })
-    .then((r) => r.json())
-    .then((data) => {
-      if (data.ok) {
-        selectedCseIds.value = new Set();
-        fetchCse();
-      }
-    })
-    .catch(() => {});
-}
-
-function toggleChoice(subjectId) {
-  const set = new Set(selectedChoiceSubjectIds.value);
-  if (set.has(subjectId)) set.delete(subjectId);
-  else set.add(subjectId);
-  selectedChoiceSubjectIds.value = set;
-}
-function toggleAllChoices() {
-  if (allChoicesSelected.value) selectedChoiceSubjectIds.value = new Set();
-  else selectedChoiceSubjectIds.value = new Set(paginatedChoices.value.map((r) => r.subject_id));
-}
-function deleteSelectedPhase1Choices() {
-  if (selectedChoiceSubjectIds.value.size === 0) return;
-  if (!confirm(`确定删除选中的 ${selectedChoiceSubjectIds.value.size} 条环节一选择与打分记录吗？`)) return;
-  fetch('/api/admin/study1/phase1-choices', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ subject_ids: [...selectedChoiceSubjectIds.value] }),
-  })
-    .then((r) => r.json())
-    .then((data) => {
-      if (data.ok) {
-        selectedChoiceSubjectIds.value = new Set();
-        fetchChoices();
-      }
-    })
-    .catch(() => {});
-}
-
-const planColumns = [
+const phase1Columns = [
   { key: 'subject_id', label: '被试编号' },
   { key: 'name', label: '被试姓名' },
-  { key: 'phase', label: '创作环节' },
-  { key: 'question_no', label: '题号' },
   { key: 'big_idea', label: '核心创意点与设定' },
   { key: 'highlight_scene', label: '高光画面描述' },
   { key: 'slogan', label: '主打广告语' },
-  { key: 'start_time', label: '开始时间' },
-  { key: 'end_time', label: '结束时间' },
   { key: 'submitted_at', label: '提交时间' },
   { key: 'is_auto_saved', label: '是否自动保存' },
-  { key: 'chosen', label: '环节一最终提交作品' },
+  { key: 'chosen', label: '提交选择(个人/AI)' },
+  { key: 'expert_scores', label: '专家评分' },
+];
+const phase2Columns = [
+  { key: 'subject_id', label: '被试编号' },
+  { key: 'name', label: '被试姓名' },
+  { key: 'big_idea', label: '核心创意点与设定' },
+  { key: 'highlight_scene', label: '高光画面描述' },
+  { key: 'slogan', label: '主打广告语' },
+  { key: 'submitted_at', label: '提交时间' },
+  { key: 'is_auto_saved', label: '是否自动保存' },
 ];
 
-const exportPlansUrlWithFilter = computed(() => {
+// --- Export URLs ---
+const exportPlansPhase1Url = computed(() => {
   const q = new URLSearchParams();
   if (filters.value.keyword) q.set('keyword', filters.value.keyword);
-  if (filters.value.phase) q.set('phase', filters.value.phase);
+  q.set('phase', '环节一');
   return `/api/admin/export/study1-plans?${q.toString()}`;
 });
-const exportCseUrlWithFilter = computed(() => {
+const exportPlansPhase2Url = computed(() => {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  q.set('phase', '环节二');
+  return `/api/admin/export/study1-plans?${q.toString()}`;
+});
+const exportCseUrl = computed(() => {
   const q = new URLSearchParams();
   if (filters.value.keyword) q.set('keyword', filters.value.keyword);
   return `/api/admin/export/study1-cse?${q.toString()}`;
 });
-const exportPhase1ScoresUrlWithFilter = computed(() => {
+const exportPhase1ScoresUrl = computed(() => {
   const q = new URLSearchParams();
   if (filters.value.keyword) q.set('keyword', filters.value.keyword);
   return `/api/admin/export/study1-phase1-scores?${q.toString()}`;
 });
-
-function fetchPlans() {
+const exportExpertScoresUrl = computed(() => {
   const q = new URLSearchParams();
   if (filters.value.keyword) q.set('keyword', filters.value.keyword);
-  if (filters.value.phase) q.set('phase', filters.value.phase);
+  if (filters.value.expertName) q.set('expertName', filters.value.expertName);
+  return `/api/admin/export/study1-expert-scores?${q.toString()}`;
+});
+
+// --- Fetch functions ---
+function fetchPlansPhase1() {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  q.set('phase', '环节一');
   fetch(`/api/admin/study1/plans?${q.toString()}`)
     .then((r) => r.json())
-    .then((data) => { plans.value = Array.isArray(data) ? data : []; })
-    .catch(() => { plans.value = []; });
+    .then((data) => { plansPhase1.value = Array.isArray(data) ? data : []; })
+    .catch(() => { plansPhase1.value = []; });
 }
-
+function fetchPlansPhase2() {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  q.set('phase', '环节二');
+  fetch(`/api/admin/study1/plans?${q.toString()}`)
+    .then((r) => r.json())
+    .then((data) => { plansPhase2.value = Array.isArray(data) ? data : []; })
+    .catch(() => { plansPhase2.value = []; });
+}
 function fetchChoices() {
   fetch('/api/admin/study1/phase1-choices')
     .then((r) => r.json())
     .then((data) => { choices.value = Array.isArray(data) ? data : []; })
     .catch(() => { choices.value = []; });
 }
-
 function fetchCse() {
   const q = new URLSearchParams();
   if (filters.value.keyword) q.set('keyword', filters.value.keyword);
   fetch(`/api/admin/study1/cse?${q.toString()}`)
-    .then((r) => {
-      if (!r.ok) return [];
-      return r.json();
-    })
+    .then((r) => r.ok ? r.json() : [])
     .then((data) => { cseList.value = Array.isArray(data) ? data : []; })
     .catch(() => { cseList.value = []; });
 }
+function fetchExpertScores() {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  if (filters.value.expertName) q.set('expertName', filters.value.expertName);
+  fetch(`/api/admin/study1/expert-scores?${q.toString()}`)
+    .then((r) => r.json())
+    .then((data) => { expertScores.value = Array.isArray(data) ? data : []; })
+    .catch(() => { expertScores.value = []; });
+}
 
-// 初始加载 + 监听筛选与数据类型
 watch(
-  () => [filters.value.keyword, filters.value.phase, filters.value.dataType],
+  () => [filters.value.keyword, filters.value.dataType, filters.value.expertName],
   () => {
     page.value = 1;
     sortKey.value = '';
-    if (filters.value.dataType === 'plans') {
-      fetchPlans();
+    selectedPlanIds.value = new Set();
+    selectedCseIds.value = new Set();
+    selectedChoiceSubjectIds.value = new Set();
+    if (filters.value.dataType === 'plans-phase1') {
+      fetchPlansPhase1();
       fetchChoices();
-    } else if (filters.value.dataType === 'cse') {
-      fetchCse();
+      fetchExpertScores();
     } else if (filters.value.dataType === 'phase1-choices') {
       fetchChoices();
+    } else if (filters.value.dataType === 'plans-phase2') {
+      fetchPlansPhase2();
+    } else if (filters.value.dataType === 'cse') {
+      fetchCse();
     }
   },
   { immediate: true }
 );
 
-// 环节一选择与方案表都用 choices，统一用 subject_id 字符串做 key 保证匹配
+// --- Choice helpers ---
 const choiceMap = computed(() => {
   const map = {};
   for (const c of choices.value) {
@@ -411,13 +400,42 @@ const choiceMap = computed(() => {
   }
   return map;
 });
-
 function getChoice(subjectId) {
   const sid = subjectId != null ? String(subjectId) : '';
   const ch = choiceMap.value[sid];
   return ch ? ch.chosen : '—';
 }
 
+// --- Expert score summary per subject ---
+const expertScoresBySubject = computed(() => {
+  const map = {};
+  for (const s of expertScores.value) {
+    const sid = String(s.subject_id ?? '');
+    if (!map[sid]) map[sid] = [];
+    map[sid].push(s);
+  }
+  return map;
+});
+function getExpertScoreSummary(subjectId) {
+  const sid = String(subjectId ?? '');
+  const rows = expertScoresBySubject.value[sid];
+  if (!rows || rows.length === 0) return '—';
+  const byExpert = {};
+  for (const r of rows) {
+    const en = r.expert_name || '未知';
+    if (!byExpert[en]) byExpert[en] = [];
+    byExpert[en].push(r);
+  }
+  const parts = [];
+  for (const [expert, scores] of Object.entries(byExpert)) {
+    const avg = scores.reduce((s, r) => s + (r.score || 0), 0) / scores.length;
+    const inv = scores.some((r) => r.is_invalid);
+    parts.push(`${expert}: ${avg.toFixed(1)}${inv ? '(无效)' : ''}`);
+  }
+  return parts.join('; ');
+}
+
+// --- Phase1 scores ---
 function parseScoresJson(ch) {
   if (!ch || !ch.scores_json) return null;
   try {
@@ -427,22 +445,6 @@ function parseScoresJson(ch) {
     return null;
   }
 }
-
-function getScoresYours(subjectId) {
-  const sid = subjectId != null ? String(subjectId) : '';
-  const arr = parseScoresJson(choiceMap.value[sid]);
-  if (!arr || !arr.length) return '—';
-  return arr.map((d) => `Q${d.question_no}:${d.your_score ?? '—'}`).join(' ');
-}
-
-function getScoresAi(subjectId) {
-  const sid = subjectId != null ? String(subjectId) : '';
-  const arr = parseScoresJson(choiceMap.value[sid]);
-  if (!arr || !arr.length) return '—';
-  return arr.map((d) => `Q${d.question_no}:${d.ai_score ?? '—'}`).join(' ');
-}
-
-// 环节一选择表格：按题号取单题您的作品/AI作品分数（13题）
 function getScoreByQuestion(row, questionNo) {
   const arr = parseScoresJson(row);
   if (!arr || !arr.length) return { yours: '—', ai: '—' };
@@ -454,78 +456,128 @@ function getScoreByQuestion(row, questionNo) {
   };
 }
 
-const sortedPlans = computed(() => {
-  const arr = [...plans.value];
+// --- Sorting ---
+function sortList(arr) {
   if (!sortKey.value) return arr;
   const key = sortKey.value;
-  arr.sort((a, b) => {
+  const sorted = [...arr];
+  sorted.sort((a, b) => {
     const va = a[key];
     const vb = b[key];
     const cmp = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va ?? '').localeCompare(String(vb ?? ''), 'zh');
     return sortOrder.value === 'asc' ? cmp : -cmp;
   });
-  return arr;
-});
-
-const planTotal = computed(() => sortedPlans.value.length);
-const totalPages = computed(() => Math.max(1, Math.ceil(planTotal.value / pageSize)));
-
-const paginatedPlans = computed(() => {
-  const start = (page.value - 1) * pageSize;
-  return sortedPlans.value.slice(start, start + pageSize);
-});
-
-// CSE 列表排序与分页
-const sortedCse = computed(() => {
-  const arr = [...cseList.value];
-  const key = sortKey.value;
-  if (!key) return arr;
-  arr.sort((a, b) => {
-    const va = a[key];
-    const vb = b[key];
-    const cmp = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va ?? '').localeCompare(String(vb ?? ''), 'zh');
-    return sortOrder.value === 'asc' ? cmp : -cmp;
-  });
-  return arr;
-});
-const cseTotal = computed(() => sortedCse.value.length);
-const cseTotalPages = computed(() => Math.max(1, Math.ceil(cseTotal.value / pageSize)));
-const paginatedCse = computed(() => {
-  const start = (page.value - 1) * pageSize;
-  return sortedCse.value.slice(start, start + pageSize);
-});
-function toggleSortCse(key) {
-  if (sortKey.value === key) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  else { sortKey.value = key; sortOrder.value = 'asc'; }
+  return sorted;
 }
-
-// 环节一选择列表排序与分页
-const sortedChoices = computed(() => {
-  const arr = [...choices.value];
-  const key = sortKey.value;
-  if (!key) return arr;
-  arr.sort((a, b) => {
-    const va = a[key];
-    const vb = b[key];
-    const cmp = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va ?? '').localeCompare(String(vb ?? ''), 'zh');
-    return sortOrder.value === 'asc' ? cmp : -cmp;
-  });
-  return arr;
-});
-const choicesTotal = computed(() => sortedChoices.value.length);
-const choicesTotalPages = computed(() => Math.max(1, Math.ceil(choicesTotal.value / pageSize)));
-const paginatedChoices = computed(() => {
-  const start = (page.value - 1) * pageSize;
-  return sortedChoices.value.slice(start, start + pageSize);
-});
-function toggleSortChoice(key) {
-  if (sortKey.value === key) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  else { sortKey.value = key; sortOrder.value = 'asc'; }
-}
-
 function toggleSort(key) {
   if (sortKey.value === key) sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
   else { sortKey.value = key; sortOrder.value = 'asc'; }
+}
+
+// --- Phase1 plans ---
+const sortedPhase1 = computed(() => sortList(plansPhase1.value));
+const phase1Total = computed(() => sortedPhase1.value.length);
+const phase1TotalPages = computed(() => Math.max(1, Math.ceil(phase1Total.value / pageSize)));
+const paginatedPhase1 = computed(() => sortedPhase1.value.slice((page.value - 1) * pageSize, page.value * pageSize));
+const allPhase1PlansSelected = computed(() => paginatedPhase1.value.length > 0 && paginatedPhase1.value.every((r) => selectedPlanIds.value.has(r.id)));
+const somePhase1PlansSelected = computed(() => paginatedPhase1.value.some((r) => selectedPlanIds.value.has(r.id)) && !allPhase1PlansSelected.value);
+
+// --- Phase2 plans ---
+const sortedPhase2 = computed(() => sortList(plansPhase2.value));
+const phase2Total = computed(() => sortedPhase2.value.length);
+const phase2TotalPages = computed(() => Math.max(1, Math.ceil(phase2Total.value / pageSize)));
+const paginatedPhase2 = computed(() => sortedPhase2.value.slice((page.value - 1) * pageSize, page.value * pageSize));
+const allPhase2PlansSelected = computed(() => paginatedPhase2.value.length > 0 && paginatedPhase2.value.every((r) => selectedPlanIds.value.has(r.id)));
+const somePhase2PlansSelected = computed(() => paginatedPhase2.value.some((r) => selectedPlanIds.value.has(r.id)) && !allPhase2PlansSelected.value);
+
+// --- CSE ---
+const sortedCse = computed(() => sortList(cseList.value));
+const cseTotal = computed(() => sortedCse.value.length);
+const cseTotalPages = computed(() => Math.max(1, Math.ceil(cseTotal.value / pageSize)));
+const paginatedCse = computed(() => sortedCse.value.slice((page.value - 1) * pageSize, page.value * pageSize));
+const allCseSelected = computed(() => paginatedCse.value.length > 0 && paginatedCse.value.every((r) => selectedCseIds.value.has(r.id != null ? r.id : 'cse-' + r.subject_id)));
+const someCseSelected = computed(() => paginatedCse.value.some((r) => selectedCseIds.value.has(r.id != null ? r.id : 'cse-' + r.subject_id)) && !allCseSelected.value);
+
+// --- Choices ---
+const sortedChoices = computed(() => sortList(choices.value));
+const choicesTotal = computed(() => sortedChoices.value.length);
+const choicesTotalPages = computed(() => Math.max(1, Math.ceil(choicesTotal.value / pageSize)));
+const paginatedChoices = computed(() => sortedChoices.value.slice((page.value - 1) * pageSize, page.value * pageSize));
+const allChoicesSelected = computed(() => paginatedChoices.value.length > 0 && paginatedChoices.value.every((r) => selectedChoiceSubjectIds.value.has(r.subject_id)));
+const someChoicesSelected = computed(() => paginatedChoices.value.some((r) => selectedChoiceSubjectIds.value.has(r.subject_id)) && !allChoicesSelected.value);
+
+// --- Selection & deletion ---
+function togglePlanId(id) {
+  const set = new Set(selectedPlanIds.value);
+  if (set.has(id)) set.delete(id); else set.add(id);
+  selectedPlanIds.value = set;
+}
+function toggleAllPlans(paginated) {
+  if (paginated.every((r) => selectedPlanIds.value.has(r.id))) selectedPlanIds.value = new Set();
+  else selectedPlanIds.value = new Set(paginated.map((r) => r.id));
+}
+function deleteSelectedPlans() {
+  if (selectedPlanIds.value.size === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedPlanIds.value.size} 条方案记录吗？`)) return;
+  fetch('/api/admin/study1/plans', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [...selectedPlanIds.value] }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.ok) {
+        selectedPlanIds.value = new Set();
+        if (filters.value.dataType === 'plans-phase1') fetchPlansPhase1();
+        else fetchPlansPhase2();
+      }
+    })
+    .catch(() => {});
+}
+
+function toggleCse(id) {
+  const set = new Set(selectedCseIds.value);
+  if (set.has(id)) set.delete(id); else set.add(id);
+  selectedCseIds.value = set;
+}
+function toggleAllCse() {
+  if (allCseSelected.value) selectedCseIds.value = new Set();
+  else selectedCseIds.value = new Set(paginatedCse.value.map((r) => r.id != null ? r.id : 'cse-' + r.subject_id));
+}
+function deleteSelectedCseData() {
+  if (selectedCseIds.value.size === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedCseIds.value.size} 条CSE量表数据吗？`)) return;
+  const validIds = [...selectedCseIds.value].filter(id => typeof id === 'number' || !isNaN(Number(id))).map(Number);
+  fetch('/api/admin/study1/cse', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: validIds }),
+  })
+    .then((r) => r.json())
+    .then((data) => { if (data.ok) { selectedCseIds.value = new Set(); fetchCse(); } })
+    .catch(() => {});
+}
+
+function toggleChoice(subjectId) {
+  const set = new Set(selectedChoiceSubjectIds.value);
+  if (set.has(subjectId)) set.delete(subjectId); else set.add(subjectId);
+  selectedChoiceSubjectIds.value = set;
+}
+function toggleAllChoices() {
+  if (allChoicesSelected.value) selectedChoiceSubjectIds.value = new Set();
+  else selectedChoiceSubjectIds.value = new Set(paginatedChoices.value.map((r) => r.subject_id));
+}
+function deleteSelectedPhase1Choices() {
+  if (selectedChoiceSubjectIds.value.size === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedChoiceSubjectIds.value.size} 条环节一评分记录吗？`)) return;
+  fetch('/api/admin/study1/phase1-choices', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject_ids: [...selectedChoiceSubjectIds.value] }),
+  })
+    .then((r) => r.json())
+    .then((data) => { if (data.ok) { selectedChoiceSubjectIds.value = new Set(); fetchChoices(); } })
+    .catch(() => {});
 }
 </script>
 
@@ -570,11 +622,6 @@ function toggleSort(key) {
 .btn-primary.btn-danger { background: #c62828; }
 .btn-primary.btn-danger:hover:not(:disabled) { background: #b71c1c; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.disabled-btn {
-  background: var(--color-btn-disabled-bg) !important;
-  color: var(--color-btn-disabled-text) !important;
-  cursor: not-allowed;
-}
 .main-grid {
   flex: 1;
   min-height: 0;
@@ -644,6 +691,7 @@ function toggleSort(key) {
 }
 .data-table td.cell-body { white-space: pre-wrap; word-break: break-word; }
 .data-table td.cell-big-idea { white-space: pre-wrap; word-break: break-word; }
+.data-table td.cell-expert-scores { white-space: pre-wrap; word-break: break-word; min-width: 200px; }
 .cell-name { min-width: 4em; word-break: keep-all; overflow-wrap: normal; }
 .th-sort { cursor: pointer; }
 .th-checkbox, .td-checkbox { width: 36px; text-align: center; vertical-align: middle; }
