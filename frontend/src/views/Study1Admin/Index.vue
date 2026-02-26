@@ -22,6 +22,7 @@
         </template>
         <template v-else-if="filters.dataType === 'expert-scores'">
           <a :href="exportExpertScoresUrl" class="btn-primary" download>导出专家评分</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedExpertScoreKeys.size === 0" @click="deleteSelectedExpertScores">批量删除选中</button>
         </template>
       </div>
     </header>
@@ -217,9 +218,12 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th :colspan="14" class="text-table-head">研究一/专家评分</th>
+                  <th :colspan="15" class="text-table-head">研究一/专家评分</th>
                 </tr>
                 <tr>
+                  <th class="text-table-head th-checkbox">
+                    <input type="checkbox" :checked="paginatedExpertScoreRows.length > 0 && allExpertScoresSelected" :indeterminate="someExpertScoresSelected" @change="toggleAllExpertScores(paginatedExpertScoreRows)" />
+                  </th>
                   <th class="text-table-head th-sort" @click="toggleSort('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
                   <th class="text-table-head">被试姓名</th>
                   <th class="text-table-head th-sort" @click="toggleSort('expert_name')">专家姓名 <span v-if="sortKey === 'expert_name'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
@@ -228,6 +232,9 @@
               </thead>
               <tbody>
                 <tr v-for="row in paginatedExpertScoreRows" :key="row.key">
+                  <td class="td-checkbox">
+                    <input type="checkbox" :checked="selectedExpertScoreKeys.has(row.key)" @change="toggleExpertScoreKey(row.key)" />
+                  </td>
                   <td>{{ row.subject_id }}</td>
                   <td class="cell-name">{{ row.subject_name || '—' }}</td>
                   <td>{{ row.expert_name || '—' }}</td>
@@ -313,6 +320,7 @@ const pageSize = 20;
 const selectedPlanIds = ref(new Set());
 const selectedCseIds = ref(new Set());
 const selectedChoiceSubjectIds = ref(new Set());
+const selectedExpertScoreKeys = ref(new Set());
 
 const phase1Columns = [
   { key: 'subject_id', label: '被试编号' },
@@ -476,14 +484,62 @@ const expertScoreRows = computed(() => {
         subject_id: r.subject_id,
         subject_name: r.subject_name ?? '',
         expert_name: r.expert_name ?? '',
+        ids: [],
         q1: null, q2: null, q3: null, q4: null, q5: null, q6: null, q7: null, q8: null, q9: null, q10: null, q11: null,
       };
     }
+    if (r.id != null) keyed[k].ids.push(r.id);
     const no = Number(r.question_no);
     if (no >= 1 && no <= 11) keyed[k]['q' + no] = r.score;
   }
   return Object.values(keyed);
 });
+const allExpertScoresSelected = computed(() => {
+  const rows = paginatedExpertScoreRows.value;
+  return rows.length > 0 && rows.every((r) => selectedExpertScoreKeys.value.has(r.key));
+});
+const someExpertScoresSelected = computed(() => {
+  const rows = paginatedExpertScoreRows.value;
+  const n = rows.filter((r) => selectedExpertScoreKeys.value.has(r.key)).length;
+  return n > 0 && n < rows.length;
+});
+function toggleExpertScoreKey(key) {
+  const set = new Set(selectedExpertScoreKeys.value);
+  if (set.has(key)) set.delete(key);
+  else set.add(key);
+  selectedExpertScoreKeys.value = set;
+}
+function toggleAllExpertScores(rows) {
+  if (!rows || rows.length === 0) return;
+  const set = new Set(selectedExpertScoreKeys.value);
+  const allSelected = rows.every((r) => set.has(r.key));
+  if (allSelected) for (const r of rows) set.delete(r.key);
+  else for (const r of rows) set.add(r.key);
+  selectedExpertScoreKeys.value = set;
+}
+function deleteSelectedExpertScores() {
+  if (selectedExpertScoreKeys.value.size === 0) return;
+  const rows = sortedExpertScoreRows.value;
+  const ids = [];
+  for (const row of rows) {
+    if (selectedExpertScoreKeys.value.has(row.key) && row.ids && row.ids.length) ids.push(...row.ids);
+  }
+  if (ids.length === 0) return;
+  if (!confirm(`确定删除选中的 ${selectedExpertScoreKeys.value.size} 条专家评分记录（共 ${ids.length} 条明细）吗？`)) return;
+  fetch('/api/admin/study1/expert-scores', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.ok) {
+        selectedExpertScoreKeys.value = new Set();
+        fetchExpertScores();
+      }
+    })
+    .catch(() => {});
+}
 const sortedExpertScoreRows = computed(() => sortList(expertScoreRows.value));
 const expertScoreRowsTotal = computed(() => sortedExpertScoreRows.value.length);
 const expertScoreRowsPages = computed(() => Math.max(1, Math.ceil(expertScoreRowsTotal.value / pageSize)));
