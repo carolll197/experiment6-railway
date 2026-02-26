@@ -214,18 +214,15 @@ function fetchPlans() {
       const prog = props.initialProgress;
       const planMap = {};
       for (const p of list) planMap[String(p.subject_id)] = p;
-      const scoredIds = new Set(
-        prog && prog.scores_by_subject && typeof prog.scores_by_subject === 'object'
-          ? Object.keys(prog.scores_by_subject)
-          : []
-      );
-      if (prog && prog.plan_order && Array.isArray(prog.plan_order) && prog.plan_order.length > 0 && scoredIds.size > 0) {
+      if (prog && prog.plan_order && Array.isArray(prog.plan_order) && prog.plan_order.length > 0) {
         const orderIds = prog.plan_order.map((id) => String(id));
-        const scoredOrdered = orderIds.filter((id) => planMap[id] && scoredIds.has(id)).map((id) => planMap[id]);
-        const unscored = list.filter((p) => !scoredIds.has(String(p.subject_id)));
-        plans.value = [...scoredOrdered, ...shuffleArr(unscored)];
+        const inOrderSet = new Set(orderIds);
+        const ordered = orderIds.filter((id) => planMap[id]).map((id) => planMap[id]);
+        const rest = list.filter((p) => !inOrderSet.has(String(p.subject_id)));
+        plans.value = [...ordered, ...rest];
       } else {
         plans.value = shuffleArr(list);
+        setTimeout(() => saveProgressToBackend(), 0);
       }
       if (prog && prog.scores_by_subject && typeof prog.scores_by_subject === 'object') {
         for (const [sid, obj] of Object.entries(prog.scores_by_subject)) {
