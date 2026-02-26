@@ -14,9 +14,10 @@
       @next="onPhase1Done"
       @save="onStep4Save"
     />
-    <!-- 比较页：每次进入/刷新都随机左右顺序，不恢复评分，下方评分顺序与中间一致 -->
+    <!-- 比较页：key 每次变化强制重新挂载，实现每次进入/刷新都随机左右顺序 -->
     <Step5Compare
       v-else-if="step === 5"
+      :key="step5CompareKey"
       :phase1-plan="phase1Plan"
       :subject-id="subjectId"
       @next="onStepNext(6)"
@@ -29,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import Step0Consent from './Step0Consent.vue';
 import Step1Collect from '../PreSubject/Step1Collect.vue';
 import Step2Cse from './Step2Cse.vue';
@@ -49,6 +50,12 @@ const phase1Plan = ref({});
 const progressData = ref({});
 const startTime = ref(null);
 const endTime = ref(null);
+/** 每次显示比较页时更新，强制 Step5Compare 重新挂载以得到新随机顺序 */
+const step5CompareKey = ref(0);
+
+watch(step, (s) => {
+  if (s === 5) step5CompareKey.value = Date.now();
+});
 
 function headers() {
   return { 'Content-Type': 'application/json', 'X-Visitor-Id': visitorId.value ?? '' };
