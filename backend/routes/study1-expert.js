@@ -71,12 +71,13 @@ study1ExpertRouter.post('/progress', (req, res) => {
     const progressKey = getExpertProgressKey(req);
     if (!progressKey) return res.status(400).json({ error: '请提供 expert_name 或 visitor_id' });
     const ip = getClientIp(req);
-    const { expert_name, step, current_subject_id, scores_by_subject } = req.body;
+    const { expert_name, step, current_subject_id, scores_by_subject, plan_order } = req.body;
     const dataJson = JSON.stringify({
       expert_name: expert_name || '',
       step: step != null ? Number(step) : 0,
       current_subject_id: current_subject_id != null ? String(current_subject_id) : '',
       scores_by_subject: scores_by_subject && typeof scores_by_subject === 'object' ? scores_by_subject : {},
+      plan_order: Array.isArray(plan_order) ? plan_order.map((id) => String(id)) : [],
     });
     const updatedAt = nowStr();
     const stepNum = step != null ? Number(step) : 0;

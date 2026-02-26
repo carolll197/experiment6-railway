@@ -190,8 +190,18 @@ function saveProgressToBackend() {
       step: 2,
       current_subject_id: plan.subject_id,
       scores_by_subject: buildScoresBySubject(),
+      plan_order: plans.value.map((p) => String(p.subject_id)),
     }),
   }).catch(() => {});
+}
+
+function shuffleArr(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function fetchPlans() {
@@ -199,9 +209,24 @@ function fetchPlans() {
   fetch('/api/study1-expert/plans')
     .then((r) => r.json())
     .then((data) => {
-      plans.value = Array.isArray(data) ? data : [];
-      if (plans.value.length === 0) { emit('next'); return; }
+      let list = Array.isArray(data) ? data : [];
+      if (list.length === 0) { emit('next'); return; }
       const prog = props.initialProgress;
+      const planMap = {};
+      for (const p of list) planMap[String(p.subject_id)] = p;
+      const scoredIds = new Set(
+        prog && prog.scores_by_subject && typeof prog.scores_by_subject === 'object'
+          ? Object.keys(prog.scores_by_subject)
+          : []
+      );
+      if (prog && prog.plan_order && Array.isArray(prog.plan_order) && prog.plan_order.length > 0 && scoredIds.size > 0) {
+        const orderIds = prog.plan_order.map((id) => String(id));
+        const scoredOrdered = orderIds.filter((id) => planMap[id] && scoredIds.has(id)).map((id) => planMap[id]);
+        const unscored = list.filter((p) => !scoredIds.has(String(p.subject_id)));
+        plans.value = [...scoredOrdered, ...shuffleArr(unscored)];
+      } else {
+        plans.value = shuffleArr(list);
+      }
       if (prog && prog.scores_by_subject && typeof prog.scores_by_subject === 'object') {
         for (const [sid, obj] of Object.entries(prog.scores_by_subject)) {
           if (obj && typeof obj === 'object') {

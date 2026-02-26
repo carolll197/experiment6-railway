@@ -67,6 +67,7 @@ onMounted(() => {
         expertInitialProgress.value = {
           current_subject_id: data.current_subject_id || '',
           scores_by_subject: data.scores_by_subject && typeof data.scores_by_subject === 'object' ? data.scores_by_subject : {},
+          plan_order: Array.isArray(data.plan_order) ? data.plan_order : [],
         };
       } else if (s === 3) {
         step.value = 3;
