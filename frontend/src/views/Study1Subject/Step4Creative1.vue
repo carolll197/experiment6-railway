@@ -158,9 +158,9 @@ onUnmounted(() => {
 .module { padding: 12px; border: 1px solid var(--color-border-line); min-height: 120px; display: flex; flex-direction: column; flex-shrink: 0; }
 .module-big { min-height: 280px; }
 .module :deep(.base-textarea-wrap) { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; max-height: 180px; }
-.module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; }
+.module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; font-size: 16px; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
-.module-big :deep(textarea) { min-height: 140px; }
+.module-big :deep(textarea) { min-height: 140px; font-size: 16px; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .brief-text { white-space: pre-wrap; }
 .brief-eval-section-title { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
 .creative-wrap :deep(.brief-content) { font-size: 15px; }

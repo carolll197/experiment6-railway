@@ -206,6 +206,9 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .left-top :deep(.brief-content .brief-subtitle),
 .left-top :deep(.brief-content .text-body) { font-size: 15px; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-content .brief-subtitle strong) { font-weight: 700; }
+/* 创意简报正文内容行间距 1.15 倍；评价维度格式不改 */
+.left-top :deep(.brief-content) { line-height: 1.15; }
+.left-top :deep(.brief-content .text-body) { line-height: 1.15; }
 /* 评价维度内容与创意简报格式一致 */
 .left-top :deep(.eval-dimension) { font-size: 15px; font-family: "SimSun", "Songti SC", serif; line-height: 1.5; }
 .left-top :deep(.eval-dimension .text-h3) { font-size: 15px; font-weight: 700; margin: 8px 0 2px; }
@@ -238,9 +241,9 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .right-col .module-hint :deep(.hint-label) { font-weight: 700; }
 .right-col .module-hint :deep(.hint-content) { font-weight: 400; }
 .right-col .module :deep(.base-textarea-wrap) { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; max-height: 180px; }
-.right-col .module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; }
+.right-col .module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; font-size: 16px; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .right-col .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
-.right-col .module-big :deep(textarea) { min-height: 140px; }
+.right-col .module-big :deep(textarea) { min-height: 140px; font-size: 16px; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .right-col .btn-row { margin-top: 24px; padding: 8px 0; display: flex; justify-content: center; }
 @media (max-width: 900px) { .collab-wrap .two-cols { grid-template-columns: 1fr; } }
 </style>
