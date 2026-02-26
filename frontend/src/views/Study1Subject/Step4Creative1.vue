@@ -162,10 +162,15 @@ onUnmounted(() => {
 .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
 .module-big :deep(textarea) { min-height: 140px; }
 .brief-text { white-space: pre-wrap; }
-.brief-eval-section-title { font-size: 16px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
-.module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
+.brief-eval-section-title { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
+.creative-wrap :deep(.brief-content) { font-size: 15px; }
+.creative-wrap :deep(.brief-content .brief-title) { font-size: 17px; }
+.creative-wrap :deep(.brief-content .brief-subtitle),
+.creative-wrap :deep(.brief-content .text-body) { font-size: 15px; }
+.module-hint { font-style: normal; font-size: 15px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
 .module-hint :deep(.hint-label) { font-weight: 700; font-family: "SimSun", "Songti SC", serif; }
 .module-hint :deep(.hint-content) { font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
+.creative-wrap :deep(.eval-dimension) { font-size: 15px; }
 .btn-row { margin-top: 24px; padding: 8px 0; display: flex; justify-content: center; }
 @media (max-width: 900px) { .two-cols { grid-template-columns: 1fr; } }
 </style>

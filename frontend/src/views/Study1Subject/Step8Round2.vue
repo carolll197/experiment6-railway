@@ -1,22 +1,6 @@
 <template>
   <div class="round-wrap">
-    <div v-if="innerStep === 0" class="issue-wrap">
-      <div class="timer-bar text-score">{{ timeText }}</div>
-      <div class="timer-note text-hint italic" style="text-align: center; font-size: 12px; margin-bottom: 8px;">倒计时结束将自动保存并提交已填内容</div>
-      <p class="text-hint center" style="margin: 16px 0;">您有10分钟时间作答。产出要求同环节一。</p>
-      <div class="file-container panel-border brief-block">
-        <h2 class="brief-eval-section-title brief-header-lg">创意简报</h2>
-        <BriefContent :content="briefQuestion3FullText" />
-      </div>
-      <div class="file-container panel-border eval-block">
-        <h2 class="brief-eval-section-title spacing-12">评价维度（与环节一相同）</h2>
-        <EvalDimension />
-      </div>
-      <div class="btn-row">
-        <BasePrimaryButton label="开始协作" :enabled="countdown === 0" :countdown="countdown" @click="onStartCollab" />
-      </div>
-    </div>
-    <div v-else class="collab-wrap">
+    <div class="collab-wrap">
       <div class="timer-bar text-score">{{ timeText }}</div>
       <div class="timer-note text-hint italic" style="text-align: center; font-size: 12px; margin-bottom: 8px;">倒计时结束将自动保存并提交已填内容</div>
       <div class="two-cols">
@@ -95,13 +79,11 @@ const remaining = ref(
   init?.timerRemaining != null && init.timerRemaining > 0 && init.timerRemaining <= TOTAL_SEC ? init.timerRemaining : TOTAL_SEC
 );
 let timer = null;
-let countdownTimer = null;
 let saveInterval = null;
 const timeText = computed(() => `剩余${Math.floor(remaining.value / 60)}分${remaining.value % 60}秒`);
 
-const innerStep = ref(init?.innerStep === 1 ? 1 : 0);
-const countdown = ref(init?.countdown != null ? Math.max(0, Number(init.countdown)) : 10);
-// 从页面呈现起即开始10分钟计时，记录开始时间用于提交
+const innerStep = ref(1);
+// 实验说明页之后直接进入协作页，从页面呈现起即开始10分钟计时
 const phase2StartTime = ref(init?.phase2StartTime || null);
 
 const AI_NODES = ['分析题目及评价维度', '分析产出要求', '构思方案', '生成方案'];
@@ -134,8 +116,7 @@ function emitSave() {
   emit('save', {
     form: { ...form.value },
     timerRemaining: remaining.value,
-    innerStep: innerStep.value,
-    countdown: countdown.value,
+    innerStep: 1,
     aiSent: aiSent.value,
     aiDone: aiDone.value,
     phase2StartTime: phase2StartTime.value,
@@ -180,11 +161,6 @@ function onConfirmAutoSaved() {
   emit('next');
 }
 
-function onStartCollab() {
-  if (countdown.value > 0) return;
-  innerStep.value = 1;
-}
-
 function sendAi() {
   aiSent.value = true;
   let i = 0;
@@ -209,48 +185,31 @@ onMounted(() => {
       if (remaining.value <= 0) submitPlan(true);
     }, 1000);
   }
-  if (innerStep.value === 0 && countdown.value > 0) {
-    countdownTimer = setInterval(() => {
-      if (countdown.value > 0) countdown.value--;
-      else if (countdownTimer) clearInterval(countdownTimer);
-    }, 1000);
-  }
-  if (innerStep.value === 1 && !saveInterval) saveInterval = setInterval(emitSave, 30000);
+  if (!saveInterval) saveInterval = setInterval(emitSave, 30000);
   setTimeout(emitSave, 500);
-});
-
-watch(innerStep, (val) => {
-  if (val === 1 && !saveInterval) {
-    saveInterval = setInterval(emitSave, 30000);
-    emitSave();
-  }
 });
 watch(() => ({ ...form.value }), () => { setTimeout(emitSave, 600); }, { deep: true });
 
-onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearInterval(countdownTimer); if (saveInterval) clearInterval(saveInterval); });
+onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInterval(saveInterval); });
 </script>
 
 <style scoped>
 .round-wrap { min-height: 100vh; background: var(--color-page-bg); padding: 16px; }
 .timer-bar { text-align: center; padding: 8px 0; position: sticky; top: 0; background: var(--color-page-bg); z-index: 10; }
-.issue-wrap { width: 90%; max-width: 800px; margin: 0 auto; padding: 15px; }
-.brief-block, .eval-block { padding: 16px; margin: 12px 0; font-family: "SimSun", "Songti SC", serif; }
-.brief-header-lg { font-size: 17px !important; }
-.issue-wrap .brief-content { font-family: "SimSun", "Songti SC", serif; }
-.issue-wrap .brief-content .brief-title { font-size: 17px; }
-.brief-text { white-space: pre-wrap; }
-.btn-row { margin: 24px 0 12px; padding: 8px 0; text-align: center; }
-.btn-regular { width: 120px; height: 36px; border-radius: 4px; border: none; background: var(--color-active-bg); color: var(--color-text); font-size: 14px; cursor: pointer; }
 .collab-wrap .two-cols { width: 90%; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
 .left-col { display: grid; grid-template-rows: 42% 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
 .left-top, .left-bottom { overflow: auto; padding: 16px; font-family: "SimSun", "Songti SC", serif; }
 /* 左上角简报栏：创意简报/评价维度标题与简报题目（褪色植物染料等）字号一致；正文与小标题与创意素材正文一致；宋体；产品背景等小标题加粗 */
+/* 创意简报、评价维度两行标题再调大一号 */
 .left-top :deep(.brief-eval-section-title),
-.left-top :deep(.brief-content .brief-title) { font-size: 16px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
+.left-top :deep(.brief-content .brief-title) { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-content .brief-subtitle),
 .left-top :deep(.brief-content .text-body) { font-size: 15px; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-content .brief-subtitle strong) { font-weight: 700; }
-.left-top :deep(.eval-dimension) { font-size: 15px; font-family: "SimSun", "Songti SC", serif; }
+/* 评价维度内容与创意简报格式一致 */
+.left-top :deep(.eval-dimension) { font-size: 15px; font-family: "SimSun", "Songti SC", serif; line-height: 1.5; }
+.left-top :deep(.eval-dimension .text-h3) { font-size: 15px; font-weight: 700; margin: 8px 0 2px; }
+.left-top :deep(.eval-dimension .text-body) { font-size: 15px; margin: 2px 0; }
 .ai-dialog { background: var(--color-input-bg); border: 1px solid var(--color-secondary); border-radius: 6px; padding: 0; display: flex; flex-direction: column; }
 .ai-header { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border-bottom: 1px solid #e8e8e8; flex-shrink: 0; }
 .ai-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

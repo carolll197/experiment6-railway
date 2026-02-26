@@ -225,9 +225,12 @@ function onConfirmSubmit() {
   overflow: hidden;
 }
 /* 顶部区 */
+/* 比较页除评分栏外整体字号调大一号 */
 .top-section { flex: 0 0 auto; max-height: 20vh; display: flex; flex-direction: column; gap: 0; overflow: hidden; }
 .top-desc, .top-brief { padding: 10px; overflow: auto; }
-.brief-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-desc .text-body { font-size: 15px; }
+.top-desc .text-hint { font-size: 14px; }
+.brief-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
 .brief-actions { text-align: center; margin-top: 6px; }
 .btn-regular { width: 80px; height: 36px; border-radius: 4px; border: none; background: var(--color-active-bg); color: var(--color-text); font-size: 14px; cursor: pointer; }
 .btn-regular:hover { background: var(--color-secondary); }
@@ -243,16 +246,20 @@ function onConfirmSubmit() {
   border-radius: 6px; padding: 20px;
   max-width: 90%; max-height: 80%; overflow: auto;
 }
+.brief-modal .text-h2 { font-size: 17px; }
+.brief-modal .text-body { font-size: 15px; }
 .spacing-12 { margin-top: 12px; }
 .output-require { margin-top: 16px; }
 /* 中间区 作品对比：用 flex + order 控制左右顺序，与打分栏一致 */
 .mid-section { flex: 1 1 45%; min-height: 0; display: flex; gap: 10px; }
 .work-col { flex: 1; min-width: 0; overflow-y: auto; padding: 16px; }
-.work-label { color: #333333; font-weight: 600; margin: 0 0 8px 0; }
-.work-blocks p { margin: 2px 0; }
+.work-label { color: #333333; font-weight: 600; margin: 0 0 8px 0; font-size: 17px; }
+.work-blocks p { margin: 2px 0; font-size: 15px; }
 .work-text { white-space: pre-wrap; }
-/* 底部区 评分/提交 */
+/* 底部区 评分/提交（评分栏字号不调大） */
 .bottom-section { flex: 1 1 35%; min-height: 0; overflow-y: auto; padding: 10px; background: var(--color-input-bg); }
+.bottom-section > .text-h2 { font-size: 17px; }
+.bottom-section .radio-label { font-size: 15px; }
 .scale-block { padding: 10px; margin-top: 6px; }
 .scale-row { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #eee; }
 .scale-row:last-child { border-bottom: none; }
