@@ -20,6 +20,9 @@
           <a :href="exportCseUrl" class="btn-primary" download>导出CSE量表数据</a>
           <button type="button" class="btn-primary btn-danger" :disabled="selectedCseIds.size === 0" @click="deleteSelectedCseData">删除选中数据</button>
         </template>
+        <template v-else-if="filters.dataType === 'expert-scores'">
+          <a :href="exportExpertScoresUrl" class="btn-primary" download>导出专家评分</a>
+        </template>
       </div>
     </header>
     <div class="main-grid">
@@ -32,6 +35,7 @@
             <option value="phase1-choices">环节一被试评分</option>
             <option value="plans-phase2">环节二作品</option>
             <option value="cse">CSE量表数据</option>
+            <option value="expert-scores">研究一专家评分</option>
           </select>
 
           <label class="filter-label">被试编号/姓名</label>
@@ -42,7 +46,7 @@
             placeholder="模糊搜索"
           />
 
-          <template v-if="filters.dataType === 'plans-phase1'">
+          <template v-if="filters.dataType === 'plans-phase1' || filters.dataType === 'expert-scores'">
             <label class="filter-label">专家姓名</label>
             <input
               v-model="filters.expertName"
@@ -89,6 +93,8 @@
                   <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
                   <td class="cell-body">{{ r.highlight_scene }}</td>
                   <td class="cell-body">{{ r.slogan }}</td>
+                  <td>{{ formatBeijingTime(r.start_time) }}</td>
+                  <td>{{ formatBeijingTime(r.end_time) }}</td>
                   <td>{{ formatBeijingTime(r.submitted_at) }}</td>
                   <td>{{ r.is_auto_saved ? '是' : '否' }}</td>
                   <td>{{ getChoice(r.subject_id) }}</td>
@@ -190,6 +196,8 @@
                   <td class="cell-body cell-big-idea">{{ r.big_idea }}</td>
                   <td class="cell-body">{{ r.highlight_scene }}</td>
                   <td class="cell-body">{{ r.slogan }}</td>
+                  <td>{{ formatBeijingTime(r.start_time) }}</td>
+                  <td>{{ formatBeijingTime(r.end_time) }}</td>
                   <td>{{ formatBeijingTime(r.submitted_at) }}</td>
                   <td>{{ r.is_auto_saved ? '是' : '否' }}</td>
                 </tr>
@@ -199,6 +207,39 @@
               <button type="button" class="page-btn" :disabled="page <= 1" @click="page = Math.max(1, page - 1)">上一页</button>
               <span>{{ page }} / {{ phase2TotalPages }}</span>
               <button type="button" class="page-btn" :disabled="page >= phase2TotalPages" @click="page = Math.min(phase2TotalPages, page + 1)">下一页</button>
+            </div>
+          </div>
+        </template>
+
+        <!-- 研究一专家评分 -->
+        <template v-else-if="filters.dataType === 'expert-scores'">
+          <div v-if="expertScoreRows.length === 0" class="empty-hint text-hint center">暂无专家评分数据</div>
+          <div v-else class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th :colspan="14" class="text-table-head">研究一/专家评分</th>
+                </tr>
+                <tr>
+                  <th class="text-table-head th-sort" @click="toggleSort('subject_id')">被试编号 <span v-if="sortKey === 'subject_id'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                  <th class="text-table-head">被试姓名</th>
+                  <th class="text-table-head th-sort" @click="toggleSort('expert_name')">专家姓名 <span v-if="sortKey === 'expert_name'" class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span></th>
+                  <th v-for="n in 11" :key="n" class="text-table-head">题{{ n }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in paginatedExpertScoreRows" :key="row.key">
+                  <td>{{ row.subject_id }}</td>
+                  <td class="cell-name">{{ row.subject_name || '—' }}</td>
+                  <td>{{ row.expert_name || '—' }}</td>
+                  <td v-for="n in 11" :key="n" class="text-score">{{ row['q' + n] != null ? row['q' + n] : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="expertScoreRowsTotal > pageSize" class="pagination text-score">
+              <button type="button" class="page-btn" :disabled="page <= 1" @click="page = Math.max(1, page - 1)">上一页</button>
+              <span>{{ page }} / {{ expertScoreRowsPages }}</span>
+              <button type="button" class="page-btn" :disabled="page >= expertScoreRowsPages" @click="page = Math.min(expertScoreRowsPages, page + 1)">下一页</button>
             </div>
           </div>
         </template>
@@ -280,6 +321,8 @@ const phase1Columns = [
   { key: 'big_idea', label: '核心创意点与设定' },
   { key: 'highlight_scene', label: '高光画面描述' },
   { key: 'slogan', label: '主打广告语' },
+  { key: 'start_time', label: '开始时间' },
+  { key: 'end_time', label: '结束时间' },
   { key: 'submitted_at', label: '提交时间' },
   { key: 'is_auto_saved', label: '是否自动保存' },
   { key: 'chosen', label: '提交选择(个人/AI)' },
@@ -291,6 +334,8 @@ const phase2Columns = [
   { key: 'big_idea', label: '核心创意点与设定' },
   { key: 'highlight_scene', label: '高光画面描述' },
   { key: 'slogan', label: '主打广告语' },
+  { key: 'start_time', label: '开始时间' },
+  { key: 'end_time', label: '结束时间' },
   { key: 'submitted_at', label: '提交时间' },
   { key: 'is_auto_saved', label: '是否自动保存' },
 ];
@@ -386,6 +431,8 @@ watch(
       fetchPlansPhase2();
     } else if (filters.value.dataType === 'cse') {
       fetchCse();
+    } else if (filters.value.dataType === 'expert-scores') {
+      fetchExpertScores();
     }
   },
   { immediate: true }
@@ -416,6 +463,33 @@ const expertScoresBySubject = computed(() => {
   }
   return map;
 });
+
+// --- 研究一专家评分表格：按 (subject_id, expert_name) 聚合成行，列为题1..题11 ---
+const expertScoreRows = computed(() => {
+  const list = expertScores.value;
+  const keyed = {};
+  for (const r of list) {
+    const k = `${r.subject_id}\t${r.expert_name || ''}`;
+    if (!keyed[k]) {
+      keyed[k] = {
+        key: k,
+        subject_id: r.subject_id,
+        subject_name: r.subject_name ?? '',
+        expert_name: r.expert_name ?? '',
+        q1: null, q2: null, q3: null, q4: null, q5: null, q6: null, q7: null, q8: null, q9: null, q10: null, q11: null,
+      };
+    }
+    const no = Number(r.question_no);
+    if (no >= 1 && no <= 11) keyed[k]['q' + no] = r.score;
+  }
+  return Object.values(keyed);
+});
+const sortedExpertScoreRows = computed(() => sortList(expertScoreRows.value));
+const expertScoreRowsTotal = computed(() => sortedExpertScoreRows.value.length);
+const expertScoreRowsPages = computed(() => Math.max(1, Math.ceil(expertScoreRowsTotal.value / pageSize)));
+const paginatedExpertScoreRows = computed(() =>
+  sortedExpertScoreRows.value.slice((page.value - 1) * pageSize, page.value * pageSize)
+);
 function getExpertScoreSummary(subjectId) {
   const sid = String(subjectId ?? '');
   const rows = expertScoresBySubject.value[sid];

@@ -2,11 +2,17 @@
   <div class="consent-wrap">
     <h1 class="text-h1 center">知情同意</h1>
     <div class="file-container">
-      <p class="text-body">欢迎您参与本次关于"人机协作下的广告创意生成"的心理学研究。在决定是否参与之前，请您仔细阅读以下信息。</p>
-      <p class="text-body"><strong>研究背景与目的</strong> 本研究旨在探索人机协作下个体如何进行广告策划与创意构思。</p>
-      <p class="text-body"><strong>实验流程与任务</strong> 本实验预计耗时约12分钟，全程在线进行，您将完成创意简报撰写及作品比较等任务。</p>
-      <p class="text-body"><strong>报酬与奖金机制</strong> 认真完成所有流程且通过审核的被试将获得基础被试费；创造力排名前 15% 可获得额外奖金。</p>
-      <p class="text-body"><strong>信息保密与自愿参与</strong> 您的数据仅用于学术研究并严格保密；参与完全自愿，可随时退出。</p>
+      <p class="text-body"><strong>1. 研究背景与目的</strong> 本研究旨在探索在人工智能（AI）辅助下，个体如何进行广告策划与创意构思。</p>
+      <p class="text-body"><strong>2. 实验流程与任务</strong> 本实验预计耗时约20分钟，全程在线进行，您共计将完成2份广告创意策划案的撰写（1份为独立撰写，1份有系统内置的AI辅助）。</p>
+      <p class="text-body"><strong>3. 报酬与激励机制</strong></p>
+      <ul class="text-body">
+        <li><strong>基础报酬：</strong> 认真完成所有流程且通过审核的被试，将获得【8元】的基础被试费。</li>
+        <li><strong>额外奖金：</strong> 我们将邀请行业专家对作品的创造力进行盲审排名。2份作品综合排名前 20% 的创作者将获得额外【5元】的奖金，排名20%-70%的创作者将获得额外【2元】的奖金。</li>
+        <li><strong>审核说明：</strong> 本研究谢绝自行使用AI生成答案，后台将检测作答质量，对于态度敷衍、胡乱作答或经检测发现违规使用AI生成的作品，将不予发放任何报酬。</li>
+      </ul>
+      <p class="text-body"><strong>4. 信息保密</strong> 您的所有数据仅用于学术研究分析，我们承诺您的个人身份信息及作答信息将会被严格保密。</p>
+      <p class="text-body"><strong>5. 自愿参与与退出</strong> 参与本实验完全自愿。您可以在实验过程中的任何时间选择退出，但这将导致您无法获得实验报酬。</p>
+      <p class="text-body"><strong>6. 联系方式</strong> 如对本研究有任何疑问，请联系研究负责人：刘锦洁 18513701922。</p>
     </div>
     <div class="checkbox-row">
       <BaseCheckbox v-model="checked" label="我已阅读并理解以上内容，并同意参与本次实验。" />
@@ -55,6 +61,9 @@ defineEmits(['next']);
   align-items: center;
   gap: 16px;
 }
+.file-container { width: 90%; max-width: 800px; }
+.file-container ul { margin: 8px 0; padding-left: 20px; }
+.file-container li { margin: 4px 0; }
 .checkbox-row { display: flex; align-items: center; gap: 8px; }
 .btn-row { margin-top: 16px; }
 </style>

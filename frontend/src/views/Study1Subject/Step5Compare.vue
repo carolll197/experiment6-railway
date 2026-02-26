@@ -4,7 +4,7 @@
     <div class="top-section">
       <div class="file-container panel-border top-desc">
         <p class="text-body">感谢您的创作！下面我们为您提供了一份AI作品，请您为您的作品和AI作品的创造力分别打分，并选择其一提交作为第一环节的最终作品。</p>
-        <p class="text-hint" style="margin-top: 8px;">奖励机制： 您提交的最终作品将参与评审打分，所有作品综合排名前 20% 的创作者将获得额外【10元】的奖金，排名20%-70%的创作者将获得额外【5元】的奖金。</p>
+        <p class="text-hint" style="margin-top: 8px;">奖励机制：您提交的最终作品将参与评审打分，所有作品综合排名前 20% 的创作者将获得额外【5元】的奖金，排名20%-70%的创作者将获得额外【2元】的奖金。</p>
       </div>
       <div class="file-container panel-border top-brief">
         <div class="brief-preview text-body">{{ briefPreview }}</div>
@@ -14,10 +14,19 @@
       </div>
     </div>
 
-    <!-- 简报展开悬浮框 -->
+    <!-- 简报展开悬浮框 + 产出要求 -->
     <div v-if="briefExpanded" class="brief-overlay" @click.self="briefExpanded = false">
       <div class="brief-modal panel-border">
         <BriefContent :content="briefQuestion1" />
+        <h2 class="text-h2 spacing-12">产出要求</h2>
+        <div class="output-require file-container">
+          <p class="text-body"><strong>模块1：核心创意点与设定（The Big Idea）</strong></p>
+          <p class="text-body">如果这是一支视频广告，请概括你这支广告的"核心脑洞"，包含场景/世界观设定、角色、核心故事线/反转等要素。</p>
+          <p class="text-body" style="margin-top: 8px;"><strong>模块2：高光画面描述（The Highlight Scene）</strong></p>
+          <p class="text-body">请描绘其中最精彩、最抓人眼球的那一幕画面，尽量调动观众的多重感官，补充视觉、听觉等细节。</p>
+          <p class="text-body" style="margin-top: 8px;"><strong>模块3：主打广告语（The Slogan）</strong></p>
+          <p class="text-body">请为你的广告写一句作为结尾的"点睛之笔"（一句话广告语）。</p>
+        </div>
       </div>
     </div>
 
@@ -234,6 +243,8 @@ function onConfirmSubmit() {
   border-radius: 6px; padding: 20px;
   max-width: 90%; max-height: 80%; overflow: auto;
 }
+.spacing-12 { margin-top: 12px; }
+.output-require { margin-top: 16px; }
 /* 中间区 作品对比：用 flex + order 控制左右顺序，与打分栏一致 */
 .mid-section { flex: 1 1 45%; min-height: 0; display: flex; gap: 10px; }
 .work-col { flex: 1; min-width: 0; overflow-y: auto; padding: 16px; }

@@ -13,7 +13,7 @@
         <EvalDimension />
       </div>
       <div class="btn-row">
-        <BasePrimaryButton label="开始协作" :enabled="countdown === 0" :countdown="countdown" @click="innerStep = 1" />
+        <BasePrimaryButton label="开始协作" :enabled="countdown === 0" :countdown="countdown" @click="onStartCollab" />
       </div>
     </div>
     <div v-else class="collab-wrap">
@@ -101,6 +101,8 @@ const timeText = computed(() => `剩余${Math.floor(remaining.value / 60)}分${r
 
 const innerStep = ref(init?.innerStep === 1 ? 1 : 0);
 const countdown = ref(init?.countdown != null ? Math.max(0, Number(init.countdown)) : 10);
+// 从页面呈现起即开始10分钟计时，记录开始时间用于提交
+const phase2StartTime = ref(init?.phase2StartTime || null);
 
 const AI_NODES = ['分析题目及评价维度', '分析产出要求', '构思方案', '生成方案'];
 const aiSent = ref(!!init?.aiSent);
@@ -136,12 +138,14 @@ function emitSave() {
     countdown: countdown.value,
     aiSent: aiSent.value,
     aiDone: aiDone.value,
+    phase2StartTime: phase2StartTime.value,
   });
 }
 
 function submitPlan(isAutoSaved) {
   if (timer) { clearInterval(timer); timer = null; }
   if (saveInterval) { clearInterval(saveInterval); saveInterval = null; }
+  const endTime = new Date().toISOString();
   const payload = {
     subject_id: props.subjectId,
     name: props.name,
@@ -151,11 +155,13 @@ function submitPlan(isAutoSaved) {
     highlight_scene: form.value.highlight_scene,
     slogan: form.value.slogan,
     is_auto_saved: isAutoSaved ? 1 : 0,
+    startTime: phase2StartTime.value || endTime,
+    endTime,
   };
   fetch('/api/study1-subject/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     .then((r) => r.json())
     .then((data) => {
-      if (data.ok) emit('next');
+      if (data && data.ok) emit('next');
       else emit('next');
     })
     .catch(() => {
@@ -174,6 +180,11 @@ function onConfirmAutoSaved() {
   emit('next');
 }
 
+function onStartCollab() {
+  if (countdown.value > 0) return;
+  innerStep.value = 1;
+}
+
 function sendAi() {
   aiSent.value = true;
   let i = 0;
@@ -190,30 +201,27 @@ function sendAi() {
 }
 
 onMounted(() => {
-  if (innerStep.value === 0) {
-    if (countdown.value > 0) {
-      countdownTimer = setInterval(() => {
-        if (countdown.value > 0) countdown.value--;
-        else if (countdownTimer) clearInterval(countdownTimer);
-      }, 1000);
-    }
-  } else if (innerStep.value === 1 && !timer) {
+  // 页面呈现即开始10分钟倒计时；开始时间用于提交
+  if (!phase2StartTime.value) phase2StartTime.value = new Date().toISOString();
+  if (!timer) {
     timer = setInterval(() => {
       remaining.value--;
       if (remaining.value <= 0) submitPlan(true);
     }, 1000);
-    saveInterval = setInterval(emitSave, 30000);
   }
+  if (innerStep.value === 0 && countdown.value > 0) {
+    countdownTimer = setInterval(() => {
+      if (countdown.value > 0) countdown.value--;
+      else if (countdownTimer) clearInterval(countdownTimer);
+    }, 1000);
+  }
+  if (innerStep.value === 1 && !saveInterval) saveInterval = setInterval(emitSave, 30000);
   setTimeout(emitSave, 500);
 });
 
 watch(innerStep, (val) => {
-  if (val === 1 && !timer) {
-    timer = setInterval(() => {
-      remaining.value--;
-      if (remaining.value <= 0) submitPlan(true);
-    }, 1000);
-    if (!saveInterval) saveInterval = setInterval(emitSave, 30000);
+  if (val === 1 && !saveInterval) {
+    saveInterval = setInterval(emitSave, 30000);
     emitSave();
   }
 });
@@ -231,8 +239,12 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearIn
 .btn-row { margin: 24px 0 12px; padding: 8px 0; text-align: center; }
 .btn-regular { width: 120px; height: 36px; border-radius: 4px; border: none; background: var(--color-active-bg); color: var(--color-text); font-size: 14px; cursor: pointer; }
 .collab-wrap .two-cols { width: 90%; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-.left-col { display: grid; grid-template-rows: 30% 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
+.left-col { display: grid; grid-template-rows: 42% 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
 .left-top, .left-bottom { overflow: auto; padding: 16px; }
+.left-top { font-size: 15px; }
+.left-top :deep(.brief-content),
+.left-top :deep(.brief-eval-section-title) { font-size: 15px; }
+.left-top :deep(.text-body) { font-size: 15px; }
 .ai-dialog { background: var(--color-input-bg); border: 1px solid var(--color-secondary); border-radius: 6px; padding: 0; display: flex; flex-direction: column; }
 .ai-header { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border-bottom: 1px solid #e8e8e8; flex-shrink: 0; }
 .ai-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

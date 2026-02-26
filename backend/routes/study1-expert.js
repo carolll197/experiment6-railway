@@ -22,10 +22,9 @@ function getExpertProgressKey(req) {
   return (req.headers['x-visitor-id'] || body.visitor_id || q.visitor_id || '').trim();
 }
 
-// 中位作品（原作，呈现给专家评分）
-const MEDIAN_WORK = {
+// 中位作品（原作，呈现给专家评分）；subject_id 在 /plans 中动态设为 max(被试编号)+1
+const MEDIAN_WORK_BODY = {
   id: -1,
-  subject_id: '36',
   name: '中位作品',
   phase: '环节一',
   question_no: 1,
@@ -100,13 +99,10 @@ study1ExpertRouter.get('/plans', (req, res) => {
     const db = req.app.get('db');
     const rows = db.prepare("SELECT * FROM study1_subject_plans WHERE phase = '环节一' ORDER BY id").all();
 
-    // 检查中位作品编号是否与被试冲突，若冲突则用 max+1
-    const existingIds = new Set(rows.map((r) => String(r.subject_id)));
-    let medianWork = { ...MEDIAN_WORK };
-    if (existingIds.has(medianWork.subject_id)) {
-      const maxNum = Math.max(0, ...rows.map((r) => Number(r.subject_id) || 0));
-      medianWork.subject_id = String(maxNum + 1);
-    }
+    // 中位作品编号 = 目前所有被试编号最大值 + 1
+    const maxNum = rows.length === 0 ? 0 : Math.max(...rows.map((r) => Number(r.subject_id) || 0));
+    const medianSubjectId = String(maxNum + 1);
+    const medianWork = { ...MEDIAN_WORK_BODY, subject_id: medianSubjectId };
 
     const allPlans = [...rows, medianWork];
     const shuffled = shuffle(allPlans);
