@@ -67,6 +67,7 @@ import { creativityScaleItems } from '../../content/preExperiment.js';
 
 const props = defineProps({
   expertName: { type: String, default: '' },
+  initialProgress: { type: Object, default: null },
 });
 const emit = defineEmits(['next']);
 
@@ -146,6 +147,7 @@ function saveCurrentScores() {
 
 function prev() {
   if (currentIndex.value <= 0) return;
+  saveProgressToBackend();
   currentIndex.value--;
 }
 
@@ -154,6 +156,7 @@ async function next() {
   const plan = currentPlan.value;
   if (!plan) return;
   await saveCurrentScores();
+  saveProgressToBackend();
   if (currentIndex.value + 1 >= plans.value.length) {
     emit('next');
     return;
@@ -168,11 +171,28 @@ function scheduleSave() {
     saveTimer = null;
   }, 800);
 }
-watch(
-  () => ({ sid: currentPlan.value?.subject_id, scores: scoresBySubject.value, invalid: invalidBySubject.value }),
-  () => { if (currentPlan.value) scheduleSave(); },
-  { deep: true }
-);
+function buildScoresBySubject() {
+  const out = {};
+  for (const [sid, obj] of Object.entries(scoresBySubject.value)) {
+    out[sid] = { scores: obj.scores || {}, is_invalid: !!invalidBySubject.value[sid] };
+  }
+  return out;
+}
+
+function saveProgressToBackend() {
+  const plan = currentPlan.value;
+  if (!plan) return;
+  fetch('/api/study1-expert/progress', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      expert_name: props.expertName || '',
+      step: 2,
+      current_subject_id: plan.subject_id,
+      scores_by_subject: buildScoresBySubject(),
+    }),
+  }).catch(() => {});
+}
 
 function fetchPlans() {
   loadingPlans.value = true;
@@ -180,7 +200,21 @@ function fetchPlans() {
     .then((r) => r.json())
     .then((data) => {
       plans.value = Array.isArray(data) ? data : [];
-      if (plans.value.length === 0) emit('next');
+      if (plans.value.length === 0) { emit('next'); return; }
+      const prog = props.initialProgress;
+      if (prog && prog.scores_by_subject && typeof prog.scores_by_subject === 'object') {
+        for (const [sid, obj] of Object.entries(prog.scores_by_subject)) {
+          if (obj && typeof obj === 'object') {
+            if (!scoresBySubject.value[sid]) scoresBySubject.value[sid] = { scores: {} };
+            if (obj.scores && typeof obj.scores === 'object') scoresBySubject.value[sid].scores = { ...obj.scores };
+            if (obj.is_invalid) invalidBySubject.value[sid] = true;
+          }
+        }
+      }
+      if (prog && prog.current_subject_id != null && prog.current_subject_id !== '') {
+        const idx = plans.value.findIndex((p) => String(p.subject_id) === String(prog.current_subject_id));
+        if (idx >= 0) currentIndex.value = idx;
+      }
     })
     .catch(() => {})
     .finally(() => { loadingPlans.value = false; });
@@ -188,6 +222,24 @@ function fetchPlans() {
 function refreshPlans() {
   fetchPlans();
 }
+
+let progressSaveTimer = null;
+function scheduleProgressSave() {
+  if (progressSaveTimer) clearTimeout(progressSaveTimer);
+  progressSaveTimer = setTimeout(() => { saveProgressToBackend(); progressSaveTimer = null; }, 600);
+}
+
+watch(
+  () => ({ sid: currentPlan.value?.subject_id, scores: scoresBySubject.value, invalid: invalidBySubject.value }),
+  () => {
+    if (currentPlan.value) {
+      scheduleSave();
+      scheduleProgressSave();
+    }
+  },
+  { deep: true }
+);
+
 onMounted(() => {
   fetchPlans();
 });

@@ -28,9 +28,9 @@ const MEDIAN_WORK_BODY = {
   name: '中位作品',
   phase: '环节一',
   question_no: 1,
-  big_idea: '故事发生在超市里，那些有伤疤、长得歪的丑苹果被人嫌弃，只能待在角落。大家都嫌它们丑，没人要，只能扔在角落。结果把它们做成苏打水，一喝才发现，比那些好看的苹果还甜还香，一下子就改变了大家以貌取果的想法',
-  highlight_scene: '先拍丑苹果被丢在一边，然后被放进榨汁机，咔嚓一声榨出金黄的果汁，气泡在杯子里冒。有人喝了一口，眼睛一下就亮了，嘴角忍不住往上扬，表情特别惊喜，暖黄的光打在他脸上，看着特别治愈',
-  slogan: '别光看外表，丑苹果也能甜到你心里',
+  big_idea: '这支广告的核心脑洞如下：\n- 场景/世界观设定： 设定在一个"颜值即正义"的苹果世界里，长得丑、有伤疤的苹果全被当成次品，面临被送去当饲料的命运。\n- 角色： 主角是一只满是伤疤的丑苹果。\n- 核心故事线/反转： 丑苹果发现自己的伤疤里，其实藏着更甜的味道。最终，丑苹果苏打水将它真实的"伤疤履历"印在了瓶身标签上，向大众传递出明确的信息：别光看脸，不完美的外表下，藏着更棒的甜。',
+  highlight_scene: '满是伤疤的丑苹果被无情地丢进次品筐中。此时镜头拉近，特写果皮上的旧伤：琥珀色的糖液从疤痕里渗出来，像小泪珠在果皮上滚。随后，一束暖光照过来，它被榨成一杯果汁。',
+  slogan: '伤疤里的甜，才是真的。',
   submitted_at: '',
   is_auto_saved: 0,
 };
@@ -71,20 +71,21 @@ study1ExpertRouter.post('/progress', (req, res) => {
     const progressKey = getExpertProgressKey(req);
     if (!progressKey) return res.status(400).json({ error: '请提供 expert_name 或 visitor_id' });
     const ip = getClientIp(req);
-    const { expert_name, current_subject_id, scores, is_invalid } = req.body;
+    const { expert_name, step, current_subject_id, scores_by_subject } = req.body;
     const dataJson = JSON.stringify({
       expert_name: expert_name || '',
-      current_subject_id: current_subject_id || '',
-      scores: scores || [],
-      is_invalid: is_invalid || false,
+      step: step != null ? Number(step) : 0,
+      current_subject_id: current_subject_id != null ? String(current_subject_id) : '',
+      scores_by_subject: scores_by_subject && typeof scores_by_subject === 'object' ? scores_by_subject : {},
     });
     const updatedAt = nowStr();
+    const stepNum = step != null ? Number(step) : 0;
     db.run(
       `INSERT INTO visitor_progress (visitor_id, flow, ip, step, data_json, updated_at)
-       VALUES (?, 'study1-expert', ?, 0, ?, ?)
+       VALUES (?, 'study1-expert', ?, ?, ?, ?)
        ON CONFLICT(visitor_id, flow) DO UPDATE SET
-         ip = excluded.ip, data_json = excluded.data_json, updated_at = excluded.updated_at`,
-      [progressKey, ip, dataJson, updatedAt]
+         ip = excluded.ip, step = excluded.step, data_json = excluded.data_json, updated_at = excluded.updated_at`,
+      [progressKey, ip, stepNum, dataJson, updatedAt]
     );
     res.json({ ok: true });
   } catch (e) {
