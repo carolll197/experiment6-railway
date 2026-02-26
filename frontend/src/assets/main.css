@@ -15,18 +15,18 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, "Segoe UI", sans-serif; background: var(--color-page-bg); color: var(--color-text); }
+body { margin: 0; font-family: "SimSun", "Songti SC", serif; background: var(--color-page-bg); color: var(--color-text); }
 #app { min-height: 100vh; }
 
-.text-h1 { font-size: 18px; font-weight: 600; color: var(--color-text); margin: 16px 0; line-height: 1.4; }
+.text-h1 { font-size: 18px; font-weight: 600; color: var(--color-text); margin: 16px 0; line-height: 1.4; font-family: "SimSun", "Songti SC", serif; }
 .text-h1.center { text-align: center; }
 .text-h1.left { text-align: left; }
-.text-h2 { font-size: 16px; font-weight: 500; color: var(--color-text); margin: 8px 0; line-height: 1.4; }
+.text-h2 { font-size: 16px; font-weight: 500; color: var(--color-text); margin: 8px 0; line-height: 1.4; font-family: "SimSun", "Songti SC", serif; }
 .text-h2.center { text-align: center; }
-.text-h3 { font-size: 15px; font-weight: 500; color: var(--color-text); line-height: 1.4; }
-.text-body { font-size: 14px; font-weight: 400; color: var(--color-text); line-height: 1.4; }
+.text-h3 { font-size: 15px; font-weight: 500; color: var(--color-text); line-height: 1.4; font-family: "SimSun", "Songti SC", serif; }
+.text-body { font-size: 14px; font-weight: 400; color: var(--color-text); line-height: 1.4; font-family: "SimSun", "Songti SC", serif; }
 .text-body.center { text-align: center; }
-.text-hint { font-size: 13px; font-weight: 400; color: var(--color-hint); font-style: italic; line-height: 1.3; }
+.text-hint { font-size: 13px; font-weight: 400; color: var(--color-hint); font-style: italic; line-height: 1.3; font-family: "SimSun", "Songti SC", serif; }
 .text-hint.center { text-align: center; }
 .text-score { font-size: 14px; font-weight: 600; color: var(--color-primary); font-family: monospace; }
 .panel-border { border: 1px solid var(--color-border-line); }

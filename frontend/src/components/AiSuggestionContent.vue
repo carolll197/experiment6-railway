@@ -44,9 +44,9 @@ const parsed = computed(() => {
 </script>
 
 <style scoped>
-.ai-suggestion { margin-top: 8px; }
+.ai-suggestion { margin-top: 8px; font-family: "SimSun", "Songti SC", serif; }
 .ai-block { margin-bottom: 12px; }
 .ai-block:last-child { margin-bottom: 0; }
-.ai-subtitle { font-weight: 600; margin: 0 0 4px 0; }
-.ai-body { white-space: pre-wrap; margin: 0; }
+.ai-subtitle { font-weight: 600; margin: 0 0 4px 0; font-family: "SimSun", "Songti SC", serif; }
+.ai-body { white-space: pre-wrap; margin: 0; font-family: "SimSun", "Songti SC", serif; }
 </style>

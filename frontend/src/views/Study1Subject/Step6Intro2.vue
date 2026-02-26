@@ -2,11 +2,11 @@
   <div class="intro-wrap">
     <h1 class="text-h1 center">实验内容说明-环节二</h1>
     <div class="file-container">
-      <p class="text-body">恭喜您完成了第一个环节，现在进入"AI辅助撰写"环节，您需要完成一份广告创意策划方案的撰写，系统内置的AI会生成一份方案供您参考，您同样需要在10分钟内完成创作与提交，谢绝自行使用AI生成答案。</p>
+      <p class="text-body">恭喜您完成了第一个环节，现在进入"AI辅助撰写"环节，您同样需要完成一份广告创意策划方案的撰写，系统内置的AI会生成一份方案供您参考，您同样需要在10分钟内完成创作与提交，谢绝自行使用AI生成答案。</p>
       <p class="text-body">奖励机制（与环节一相同）：您提交的最终作品将参与评审打分，最终综合排名前 20% 的创作者将获得额外【5元】的奖金，排名20%-70%的创作者将获得额外【2元】的奖金。</p>
     </div>
     <div class="file-container">
-      <h2 class="text-h2">评价维度：</h2>
+      <h2 class="text-h2">评价维度（与环节一相同）：</h2>
       <div class="file-container">
         <h3 class="text-h3">独特性</h3>
         <p class="text-body">广告包含的元素具有差异、新颖、独特等特质，包含 5 个核心子维度：</p>

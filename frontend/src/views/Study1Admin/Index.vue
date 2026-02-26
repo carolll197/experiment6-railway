@@ -59,21 +59,21 @@
       </aside>
       <section class="table-panel panel-border">
 
-        <!-- 环节一被试方案（含专家评分 + 被试选择） -->
+        <!-- 环节一被试方案（不含专家评分列） -->
         <template v-if="filters.dataType === 'plans-phase1'">
           <div v-if="plansPhase1.length === 0" class="empty-hint text-hint center">暂无符合条件的数据</div>
           <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th :colspan="phase1Columns.length + 1" class="text-table-head">研究一/环节一被试方案</th>
+                  <th :colspan="phase1ColumnsNoExpert.length + 1" class="text-table-head">研究一/环节一被试方案</th>
                 </tr>
                 <tr>
                   <th class="text-table-head th-checkbox">
                     <input type="checkbox" :checked="allPhase1PlansSelected" :indeterminate="somePhase1PlansSelected" @change="toggleAllPlans(paginatedPhase1)" />
                   </th>
                   <th
-                    v-for="c in phase1Columns"
+                    v-for="c in phase1ColumnsNoExpert"
                     :key="c.key"
                     class="text-table-head th-sort"
                     @click="toggleSort(c.key)"
@@ -98,7 +98,6 @@
                   <td>{{ formatBeijingTime(r.submitted_at) }}</td>
                   <td>{{ r.is_auto_saved ? '是' : '否' }}</td>
                   <td>{{ getChoice(r.subject_id) }}</td>
-                  <td class="cell-body cell-expert-scores">{{ getExpertScoreSummary(r.subject_id) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -328,6 +327,7 @@ const phase1Columns = [
   { key: 'chosen', label: '提交选择(个人/AI)' },
   { key: 'expert_scores', label: '专家评分' },
 ];
+const phase1ColumnsNoExpert = phase1Columns.filter((c) => c.key !== 'expert_scores');
 const phase2Columns = [
   { key: 'subject_id', label: '被试编号' },
   { key: 'name', label: '被试姓名' },
@@ -755,13 +755,14 @@ function deleteSelectedPhase1Choices() {
   text-align: left;
 }
 .data-table th {
-  background: var(--color-table-head);
-  color: #fff;
+  background: #B8D4E8;
+  color: #333;
   font-weight: 500;
   text-align: center;
   position: sticky;
   top: 0;
   z-index: 1;
+  font-family: "SimSun", "Songti SC", serif;
 }
 .data-table td.cell-body { white-space: pre-wrap; word-break: break-word; }
 .data-table td.cell-big-idea { white-space: pre-wrap; word-break: break-word; }
