@@ -64,4 +64,13 @@ defineEmits(['next']);
 .page-wrap.flow-center .flex {
   justify-content: center;
 }
+/* 流程说明页整体字号调大一号 */
+.page-wrap.flow-center .text-h1 { font-size: 19px; }
+.page-wrap.flow-center .text-body,
+.page-wrap.flow-center .text-body p { font-size: 15px; }
+.page-wrap.flow-center .text-h2 { font-size: 17px; }
+.page-wrap.flow-center .p-module :deep(.eval-dimension) { font-size: 15px; }
+.page-wrap.flow-center .p-module :deep(.eval-dimension .text-h3) { font-size: 15px; }
+.page-wrap.flow-center .p-module :deep(.eval-dimension .text-body) { font-size: 15px; }
+.page-wrap.flow-center label { font-size: 15px; }
 </style>

@@ -202,8 +202,9 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .left-top, .left-bottom { overflow: auto; padding: 16px; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-eval-section-title),
 .left-top :deep(.brief-content .brief-title) { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
+/* 创意简报正文与下方评价维度正文字号一致（16px） */
 .left-top :deep(.brief-content .brief-subtitle),
-.left-top :deep(.brief-content .text-body) { font-size: 15px; font-family: "SimSun", "Songti SC", serif; }
+.left-top :deep(.brief-content .text-body) { font-size: 16px; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-content .brief-subtitle strong) { font-weight: 700; }
 /* 创意简报正文（含创意素材 1.2.3.）与环节一创作页格式统一：行距 1.5 */
 .left-top :deep(.brief-content) { line-height: 1.5; }
