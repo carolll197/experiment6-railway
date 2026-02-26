@@ -260,10 +260,12 @@ onMounted(() => {
   gap: 12px;
   align-items: start;
 }
+/* 固定左侧列高度，使创意简报栏（左上）与方案栏（左下）比例一致，不随当前方案内容长短变化 */
 .left-col {
   display: grid;
   grid-template-rows: 40% 1fr;
   gap: 8px;
+  height: calc(100vh - 32px);
   max-height: calc(100vh - 32px);
   overflow: hidden;
 }
