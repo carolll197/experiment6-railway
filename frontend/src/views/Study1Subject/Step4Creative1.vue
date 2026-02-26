@@ -170,7 +170,9 @@ onUnmounted(() => {
 .module-hint { font-style: normal; font-size: 15px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
 .module-hint :deep(.hint-label) { font-weight: 700; font-family: "SimSun", "Songti SC", serif; }
 .module-hint :deep(.hint-content) { font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
-.creative-wrap :deep(.eval-dimension) { font-size: 15px; }
+/* 左下栏“创造力维度”五字不变，其下评价维度内容字号调大一号 */
+.creative-wrap .left-bottom .brief-eval-section-title { font-size: 17px; }
+.creative-wrap .left-bottom :deep(.eval-dimension) { font-size: 16px; }
 .btn-row { margin-top: 24px; padding: 8px 0; display: flex; justify-content: center; }
 @media (max-width: 900px) { .two-cols { grid-template-columns: 1fr; } }
 </style>

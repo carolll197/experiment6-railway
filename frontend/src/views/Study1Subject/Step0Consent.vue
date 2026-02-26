@@ -61,9 +61,11 @@ defineEmits(['next']);
   align-items: center;
   gap: 16px;
 }
+.consent-wrap .text-h1 { font-size: 19px; }
+.consent-wrap .file-container .text-body { font-size: 15px; }
+.consent-wrap .file-container ul { margin: 8px 0; padding-left: 20px; font-size: 15px; }
+.consent-wrap .file-container li { margin: 4px 0; }
+.consent-wrap .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 15px; }
 .file-container { width: 90%; max-width: 800px; }
-.file-container ul { margin: 8px 0; padding-left: 20px; }
-.file-container li { margin: 4px 0; }
-.checkbox-row { display: flex; align-items: center; gap: 8px; }
 .btn-row { margin-top: 16px; }
 </style>

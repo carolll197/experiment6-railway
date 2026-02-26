@@ -224,18 +224,23 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .msg-user-bubble { background: var(--color-active-bg); }
 .ai-msg-system { margin-bottom: 8px; }
 .ai-node { margin: 4px 0; }
+/* AI作品正文整体调大一号 */
 .ai-msg-ai { background: #fff; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid #eee; font-family: "SimSun", "Songti SC", serif; }
+.ai-msg-ai :deep(.ai-subtitle) { font-size: 16px; }
+.ai-msg-ai :deep(.ai-body) { font-size: 16px; }
 .ai-done-tip { margin-top: 8px; }
+/* 右边栏产出要求与环节一创作页格式一致；完成创作按钮居中 */
 .right-col { display: flex; flex-direction: column; gap: 20px; max-height: calc(100vh - 80px); overflow: auto; padding: 12px; background: var(--color-page-bg); }
-.module { padding: 12px; border: 1px solid var(--color-border-line); min-height: 120px; display: flex; flex-direction: column; flex-shrink: 0; }
-.module-big { min-height: 280px; }
-.module :deep(.base-textarea-wrap) { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; max-height: 180px; }
-.module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; }
-.module-big :deep(.base-textarea-wrap) { max-height: 200px; }
-.module-big :deep(textarea) { min-height: 140px; }
-.brief-eval-section-title { font-size: 16px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
-.module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
-.module-hint :deep(.hint-label) { font-weight: 700; font-family: "SimSun", "Songti SC", serif; }
-.module-hint :deep(.hint-content) { font-weight: 400; font-family: "SimSun", "Songti SC", serif; }
+.right-col .module { padding: 12px; border: 1px solid var(--color-border-line); min-height: 120px; display: flex; flex-direction: column; flex-shrink: 0; }
+.right-col .module-big { min-height: 280px; }
+.right-col .brief-eval-section-title { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
+.right-col .module-hint { font-style: normal; font-size: 15px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
+.right-col .module-hint :deep(.hint-label) { font-weight: 700; }
+.right-col .module-hint :deep(.hint-content) { font-weight: 400; }
+.right-col .module :deep(.base-textarea-wrap) { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; max-height: 180px; }
+.right-col .module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; }
+.right-col .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
+.right-col .module-big :deep(textarea) { min-height: 140px; }
+.right-col .btn-row { margin-top: 24px; padding: 8px 0; display: flex; justify-content: center; }
 @media (max-width: 900px) { .collab-wrap .two-cols { grid-template-columns: 1fr; } }
 </style>
