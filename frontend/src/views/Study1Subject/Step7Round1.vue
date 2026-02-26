@@ -253,9 +253,9 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (countdownTimer) clearIn
 .module { padding: 12px; border: 1px solid var(--color-border-line); min-height: 120px; display: flex; flex-direction: column; flex-shrink: 0; }
 .module-big { min-height: 280px; }
 .module :deep(.base-textarea-wrap) { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; max-height: 180px; }
-.module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; font-size: 16px; font-family: "FangSong", "仿宋", "STFangsong", serif; }
+.module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; font-size: 16px; font-weight: 700; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
-.module-big :deep(textarea) { min-height: 140px; font-size: 16px; font-family: "FangSong", "仿宋", "STFangsong", serif; }
+.module-big :deep(textarea) { min-height: 140px; font-size: 16px; font-weight: 700; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .brief-eval-section-title { font-size: 16px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
 .module-hint { font-style: normal; font-size: 14px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
 .module-hint :deep(.hint-label) { font-weight: 700; font-family: "SimSun", "Songti SC", serif; }

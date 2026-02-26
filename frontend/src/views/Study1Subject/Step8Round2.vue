@@ -197,22 +197,19 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .round-wrap { min-height: 100vh; background: var(--color-page-bg); padding: 16px; }
 .timer-bar { text-align: center; padding: 8px 0; position: sticky; top: 0; background: var(--color-page-bg); z-index: 10; }
 .collab-wrap .two-cols { width: 90%; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-.left-col { display: grid; grid-template-rows: 42% 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
+/* 左上栏与环节一创作页格式、字号一致 */
+.left-col { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
 .left-top, .left-bottom { overflow: auto; padding: 16px; font-family: "SimSun", "Songti SC", serif; }
-/* 左上角简报栏：创意简报/评价维度标题与简报题目（褪色植物染料等）字号一致；正文与小标题与创意素材正文一致；宋体；产品背景等小标题加粗 */
-/* 创意简报、评价维度两行标题再调大一号 */
 .left-top :deep(.brief-eval-section-title),
 .left-top :deep(.brief-content .brief-title) { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-content .brief-subtitle),
 .left-top :deep(.brief-content .text-body) { font-size: 15px; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-content .brief-subtitle strong) { font-weight: 700; }
-/* 创意简报正文内容行间距 1.15 倍；评价维度格式不改 */
 .left-top :deep(.brief-content) { line-height: 1.15; }
 .left-top :deep(.brief-content .text-body) { line-height: 1.15; }
-/* 评价维度内容与创意简报格式一致 */
-.left-top :deep(.eval-dimension) { font-size: 15px; font-family: "SimSun", "Songti SC", serif; line-height: 1.5; }
-.left-top :deep(.eval-dimension .text-h3) { font-size: 15px; font-weight: 700; margin: 8px 0 2px; }
-.left-top :deep(.eval-dimension .text-body) { font-size: 15px; margin: 2px 0; }
+.left-top :deep(.eval-dimension) { font-size: 16px; font-family: "SimSun", "Songti SC", serif; line-height: 1.5; }
+.left-top :deep(.eval-dimension .text-h3) { font-size: 16px; font-weight: 700; margin: 8px 0 2px; }
+.left-top :deep(.eval-dimension .text-body) { font-size: 16px; margin: 2px 0; }
 .ai-dialog { background: var(--color-input-bg); border: 1px solid var(--color-secondary); border-radius: 6px; padding: 0; display: flex; flex-direction: column; }
 .ai-header { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border-bottom: 1px solid #e8e8e8; flex-shrink: 0; }
 .ai-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -241,9 +238,9 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .right-col .module-hint :deep(.hint-label) { font-weight: 700; }
 .right-col .module-hint :deep(.hint-content) { font-weight: 400; }
 .right-col .module :deep(.base-textarea-wrap) { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; max-height: 180px; }
-.right-col .module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; font-size: 16px; font-family: "FangSong", "仿宋", "STFangsong", serif; }
+.right-col .module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; font-size: 16px; font-weight: 700; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .right-col .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
-.right-col .module-big :deep(textarea) { min-height: 140px; font-size: 16px; font-family: "FangSong", "仿宋", "STFangsong", serif; }
+.right-col .module-big :deep(textarea) { min-height: 140px; font-size: 16px; font-weight: 700; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .right-col .btn-row { margin-top: 24px; padding: 8px 0; display: flex; justify-content: center; }
 @media (max-width: 900px) { .collab-wrap .two-cols { grid-template-columns: 1fr; } }
 </style>

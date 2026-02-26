@@ -246,8 +246,13 @@ function onConfirmSubmit() {
   border-radius: 6px; padding: 20px;
   max-width: 90%; max-height: 80%; overflow: auto;
 }
-.brief-modal .text-h2 { font-size: 17px; }
-.brief-modal .text-body { font-size: 15px; }
+/* 展开后悬浮框整体字体调大一号 */
+.brief-modal .text-h2 { font-size: 18px; }
+.brief-modal .text-body { font-size: 16px; }
+.brief-modal :deep(.brief-content) { font-size: 16px; }
+.brief-modal :deep(.brief-content .brief-title) { font-size: 18px; }
+.brief-modal :deep(.brief-content .brief-subtitle),
+.brief-modal :deep(.brief-content .text-body) { font-size: 16px; }
 .spacing-12 { margin-top: 12px; }
 .output-require { margin-top: 16px; }
 /* 中间区 作品对比：用 flex + order 控制左右顺序，与打分栏一致 */
