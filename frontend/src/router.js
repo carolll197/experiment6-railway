@@ -36,6 +36,21 @@ const routes = [
     name: 'Study1Admin',
     component: () => import('./views/Study1Admin/Index.vue'),
   },
+  {
+    path: '/study2-process',
+    name: 'Study2Process',
+    component: () => import('./views/Study2Process/Index.vue'),
+  },
+  {
+    path: '/study2-result',
+    name: 'Study2Result',
+    component: () => import('./views/Study2Result/Index.vue'),
+  },
+  {
+    path: '/study2-admin',
+    name: 'Study2Admin',
+    component: () => import('./views/Study2Admin/Index.vue'),
+  },
 ];
 
 const router = createRouter({

@@ -13,6 +13,7 @@ import { preExpertRouter } from './routes/pre-expert.js';
 import { study1SubjectRouter } from './routes/study1-subject.js';
 import { adminRouter } from './routes/admin.js';
 import { study1ExpertRouter } from './routes/study1-expert.js';
+import { study2SubjectRouter } from './routes/study2-subject.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -38,6 +39,7 @@ async function start() {
   app.use('/api/pre-expert', preExpertRouter);
   app.use('/api/study1-subject', study1SubjectRouter);
   app.use('/api/study1-expert', study1ExpertRouter);
+  app.use('/api/study2-subject', study2SubjectRouter);
   app.use('/api/admin', adminRouter);
 
   // 显式注册研究一 CSE 接口，避免被静态或 catch-all 拦截导致 404

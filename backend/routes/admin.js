@@ -646,3 +646,223 @@ adminRouter.get('/export/study1-phase1-scores', (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// ======================== 研究二管理接口 ========================
+
+// 研究二 - 被试方案列表（支持 group_type 和 keyword 筛选）
+adminRouter.get('/study2/plans', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT p.*, (SELECT s.name FROM study2_subjects s WHERE s.subject_id = p.subject_id LIMIT 1) AS display_name FROM study2_subject_plans p WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND p.group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) {
+      const k = `%${String(keyword).trim()}%`;
+      sql += ` AND (p.subject_id LIKE ? OR p.name LIKE ?)`;
+      params.push(k, k);
+    }
+    sql += ` ORDER BY p.id`;
+    const rows = db.prepare(sql).all(...params);
+    res.json(Array.isArray(rows) ? rows : []);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 批量删除被试方案
+adminRouter.delete('/study2/plans', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM study2_subject_plans WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - CSE量表数据
+adminRouter.get('/study2/cse', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT c.*, COALESCE((SELECT s.name FROM study2_subjects s WHERE s.subject_id = c.subject_id LIMIT 1), '') AS display_name FROM study2_cse_scores c WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND c.group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) { sql += ` AND c.subject_id LIKE ?`; params.push(`%${String(keyword).trim()}%`); }
+    sql += ` ORDER BY c.id`;
+    const rows = db.prepare(sql).all(...params);
+    res.json(Array.isArray(rows) ? rows : []);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 批量删除CSE
+adminRouter.delete('/study2/cse', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM study2_cse_scores WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 后测量表数据
+adminRouter.get('/study2/posttest', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type, variable } = req.query;
+    let sql = `SELECT t.*, COALESCE((SELECT s.name FROM study2_subjects s WHERE s.subject_id = t.subject_id LIMIT 1), '') AS display_name FROM study2_posttest t WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND t.group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) { sql += ` AND t.subject_id LIKE ?`; params.push(`%${String(keyword).trim()}%`); }
+    sql += ` ORDER BY t.id`;
+    const rows = db.prepare(sql).all(...params);
+    res.json(Array.isArray(rows) ? rows : []);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 批量删除后测数据
+adminRouter.delete('/study2/posttest', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM study2_posttest WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 导出被试方案 Excel
+adminRouter.get('/export/study2-plans', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT * FROM study2_subject_plans WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ?)`; params.push(k, k); }
+    sql += ` ORDER BY id`;
+    const rows = db.prepare(sql).all(...params);
+    const ws = XLSX.utils.json_to_sheet(
+      rows.map((r) => ({
+        被试编号: r.subject_id,
+        被试姓名: r.name,
+        组别: r.group_type === 'process' ? '过程组' : '结果组',
+        核心创意点与设定: r.big_idea,
+        高光画面描述: r.highlight_scene,
+        主打广告语: r.slogan,
+        开始时间: r.start_time,
+        AI方案生成时间: r.ai_done_time,
+        提交时间: r.submitted_at,
+        结束时间: r.end_time,
+        是否自动保存: r.is_auto_saved ? '是' : '否',
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '研究二被试方案');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study2_subject_plans.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 导出CSE Excel
+adminRouter.get('/export/study2-cse', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT c.*, COALESCE((SELECT s.name FROM study2_subjects s WHERE s.subject_id = c.subject_id LIMIT 1), '') AS display_name FROM study2_cse_scores c WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND c.group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) { sql += ` AND c.subject_id LIKE ?`; params.push(`%${String(keyword).trim()}%`); }
+    sql += ` ORDER BY c.id`;
+    const rows = db.prepare(sql).all(...params);
+    const ws = XLSX.utils.json_to_sheet(
+      rows.map((r) => ({
+        被试编号: r.subject_id,
+        被试姓名: r.display_name || '',
+        组别: r.group_type === 'process' ? '过程组' : '结果组',
+        题1: r.q1 != null ? r.q1 : '',
+        题2: r.q2 != null ? r.q2 : '',
+        题3: r.q3 != null ? r.q3 : '',
+        题4: r.q4 != null ? r.q4 : '',
+        提交时间: r.created_at || '',
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'CSE量表数据');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study2_cse_scores.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 导出后测量表 Excel
+adminRouter.get('/export/study2-posttest', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT t.*, COALESCE((SELECT s.name FROM study2_subjects s WHERE s.subject_id = t.subject_id LIMIT 1), '') AS display_name FROM study2_posttest t WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND t.group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) { sql += ` AND t.subject_id LIKE ?`; params.push(`%${String(keyword).trim()}%`); }
+    sql += ` ORDER BY t.id`;
+    const rows = db.prepare(sql).all(...params);
+    const ws = XLSX.utils.json_to_sheet(
+      rows.map((r) => ({
+        被试编号: r.subject_id,
+        被试姓名: r.display_name || '',
+        组别: r.group_type === 'process' ? '过程组' : '结果组',
+        '情绪1-轻松的': r.emotion_1, '情绪2-满意的': r.emotion_2, '情绪3-沮丧的': r.emotion_3,
+        '情绪4-失望的': r.emotion_4, '情绪5-愤怒的': r.emotion_5,
+        '期望落差1': r.gap_1, '期望落差2': r.gap_2,
+        '认知努力1': r.effort_1, '认知努力2': r.effort_2,
+        '所有权1': r.ownership_1, '所有权2': r.ownership_2, '所有权3': r.ownership_3, '所有权4': r.ownership_4,
+        '控制感1': r.control_1, '控制感2': r.control_2, '控制感3': r.control_3,
+        提交时间: r.created_at || '',
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '后测量表');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study2_posttest.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 导出对话记录 Excel (过程组)
+adminRouter.get('/export/study2-chatlogs', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword } = req.query;
+    let sql = `SELECT subject_id, name, chat_log FROM study2_subject_plans WHERE group_type = 'process'`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ?)`; params.push(k, k); }
+    sql += ` ORDER BY id`;
+    const rows = db.prepare(sql).all(...params);
+    const out = [];
+    for (const r of rows) {
+      let msgs = [];
+      try { msgs = JSON.parse(r.chat_log || '[]'); } catch (_) {}
+      const userMsgs = msgs.filter((m) => m.role === 'user');
+      const row = { 被试编号: r.subject_id, 被试姓名: r.name };
+      for (let i = 0; i < 3; i++) row[`第${i + 1}轮输入`] = userMsgs[i]?.content || '';
+      out.push(row);
+    }
+    const ws = XLSX.utils.json_to_sheet(out);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '过程组对话记录');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study2_chatlogs.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});

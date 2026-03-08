@@ -149,6 +149,45 @@ function runSchema() {
     updated_at TEXT,
     PRIMARY KEY (visitor_id, flow)
   );
+  CREATE TABLE IF NOT EXISTS study2_subjects (
+    subject_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    group_type TEXT NOT NULL DEFAULT 'process'
+  );
+  CREATE TABLE IF NOT EXISTS study2_subject_plans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    group_type TEXT NOT NULL,
+    big_idea TEXT,
+    highlight_scene TEXT,
+    slogan TEXT,
+    submitted_at TEXT,
+    is_auto_saved INTEGER DEFAULT 0,
+    created_at TEXT,
+    start_time TEXT,
+    end_time TEXT,
+    ai_done_time TEXT,
+    chat_log TEXT
+  );
+  CREATE TABLE IF NOT EXISTS study2_cse_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id TEXT NOT NULL,
+    group_type TEXT NOT NULL DEFAULT 'process',
+    q1 INTEGER, q2 INTEGER, q3 INTEGER, q4 INTEGER,
+    created_at TEXT
+  );
+  CREATE TABLE IF NOT EXISTS study2_posttest (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id TEXT NOT NULL,
+    group_type TEXT NOT NULL DEFAULT 'process',
+    emotion_1 INTEGER, emotion_2 INTEGER, emotion_3 INTEGER, emotion_4 INTEGER, emotion_5 INTEGER,
+    gap_1 INTEGER, gap_2 INTEGER,
+    effort_1 INTEGER, effort_2 INTEGER,
+    ownership_1 INTEGER, ownership_2 INTEGER, ownership_3 INTEGER, ownership_4 INTEGER,
+    control_1 INTEGER, control_2 INTEGER, control_3 INTEGER,
+    created_at TEXT
+  );
   `;
   rawDb.exec(schema);
 
@@ -162,6 +201,8 @@ function runSchema() {
     ['study1_subject_plans', 'end_time', 'TEXT'],
     ['study1_subject_plans', 'highlight_scene', 'TEXT'],
     ['study1_subject_plans', 'slogan', 'TEXT'],
+    ['study2_subject_plans', 'ai_done_time', 'TEXT'],
+    ['study2_subject_plans', 'chat_log', 'TEXT'],
   ];
   for (const [table, col, type] of migrations) {
     try {
