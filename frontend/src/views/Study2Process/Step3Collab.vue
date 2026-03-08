@@ -212,19 +212,23 @@ function startCollaboration() {
       requestFinalPlan();
     }
   }, 1000);
+  const firstRoundPrompt = '请严格按照系统提示中「第一轮：场景与角色」的固定开场白回复，仅输出该段话，不要输出模块1/2/3或最终方案。';
   aiLoading.value = true;
   fetch('/api/study2-subject/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [systemMessage], subject_id: props.subjectId }),
+    body: JSON.stringify({
+      messages: [systemMessage, { role: 'user', content: firstRoundPrompt }],
+      subject_id: props.subjectId,
+    }),
   })
     .then((r) => r.json())
     .then((data) => {
-      const content = data.choices?.[0]?.message?.content || '你好！我是你的广告创意助手，我已充分了解题目内容及产出要求。写广告最怕没有头绪，我们一步步来。首先，为了让这款【丑苹果苏打水】脱颖而出，你希望这个故事发生在一个怎样与众不同的场景里？主角是谁，它是什么样的人或物？请把你的脑洞告诉我。';
+      const content = data.choices?.[0]?.message?.content || '你好！我是你的广告创意助手，我已充分了解题目内容及产出要求。我们一步步来，首先，为了让这款【丑苹果苏打水】脱颖而出，你希望这个故事发生在一个怎样与众不同的场景里（可以是任何一种电影类型或时空场景）？主角是谁，它是什么样的人或物？请把你的脑洞告诉我。';
       chatMessages.value.push({ role: 'assistant', content, isFinal: false });
     })
     .catch(() => {
-      chatMessages.value.push({ role: 'assistant', content: '你好！我是你的广告创意助手，我已充分了解题目内容及产出要求。写广告最怕没有头绪，我们一步步来。首先，为了让这款【丑苹果苏打水】脱颖而出，你希望这个故事发生在一个怎样与众不同的场景里？主角是谁，它是什么样的人或物？请把你的脑洞告诉我。', isFinal: false });
+      chatMessages.value.push({ role: 'assistant', content: '你好！我是你的广告创意助手，我已充分了解题目内容及产出要求。我们一步步来，首先，为了让这款【丑苹果苏打水】脱颖而出，你希望这个故事发生在一个怎样与众不同的场景里（可以是任何一种电影类型或时空场景）？主角是谁，它是什么样的人或物？请把你的脑洞告诉我。', isFinal: false });
     })
     .finally(() => { aiLoading.value = false; scrollChatBottom(); emitSave(); });
 }
@@ -246,19 +250,26 @@ async function sendUserMessage() {
       body: JSON.stringify({ messages: apiMessages, subject_id: props.subjectId }),
     });
     const data = await resp.json();
-    const aiContent = data.choices?.[0]?.message?.content || data.content || 'AI 暂时无法回复，请稍后再试。';
+    let aiContent = data.choices?.[0]?.message?.content || data.content || '';
+    if (!aiContent || typeof aiContent !== 'string') aiContent = 'AI 暂时无法回复，请稍后再试。';
     const parsed = parseAiPlan(aiContent);
     const hasModules = parsed.big_idea || parsed.highlight_scene || parsed.slogan;
-    const isFinal = userRoundCount.value >= 3 || hasModules;
+    const roundComplete = userRoundCount.value >= 3;
+    const acceptAsFinal = hasModules && roundComplete;
     let displayContent = aiContent;
     if (hasModules) {
       displayContent = [parsed.big_idea && `模块1：核心创意点与比喻\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
-      aiGeneratedPlan.value = parsed;
-      chatDone.value = true;
-      aiDoneTime.value = new Date().toISOString();
-      if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
+      if (acceptAsFinal) {
+        aiGeneratedPlan.value = parsed;
+        chatDone.value = true;
+        aiDoneTime.value = new Date().toISOString();
+        if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
+      }
     }
-    chatMessages.value.push({ role: 'assistant', content: displayContent, isFinal: !!hasModules });
+    chatMessages.value.push({ role: 'assistant', content: displayContent, isFinal: acceptAsFinal });
+    if (roundComplete && !acceptAsFinal) {
+      await requestFinalPlan();
+    }
   } catch (e) {
     chatMessages.value.push({ role: 'assistant', content: 'AI 请求失败，请稍后再试。', isFinal: false });
   }
