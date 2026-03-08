@@ -2,12 +2,12 @@
   <div class="round-wrap">
     <div class="collab-wrap">
       <div class="timer-bar text-score">{{ timeText }}</div>
-      <div class="timer-note text-hint italic" style="text-align: center; font-size: 12px; margin-bottom: 8px;">倒计时结束将自动保存并提交已填内容</div>
+      <div class="timer-note text-hint italic" style="text-align: center; font-size: 12px; margin-bottom: 8px;">创作限时15分钟，倒计时结束将自动保存并提交已填内容</div>
       <div class="two-cols">
         <div class="left-col panel-border">
           <div class="left-top file-container panel-border">
             <h2 class="brief-eval-section-title">创意简报</h2>
-            <BriefContent :content="briefQuestion1" />
+            <BriefContent :content="briefQuestion1Study2" />
             <h2 class="brief-eval-section-title spacing-12">评价维度</h2>
             <EvalDimension />
           </div>
@@ -64,7 +64,7 @@ import BaseModal from '../../components/BaseModal.vue';
 import EvalDimension from '../../components/EvalDimension.vue';
 import BriefContent from '../../components/BriefContent.vue';
 import AiSuggestionContent from '../../components/AiSuggestionContent.vue';
-import { briefQuestion1, outputModules } from '../../content/study2Content.js';
+import { briefQuestion1Study2, outputModules } from '../../content/study2Content.js';
 
 const props = defineProps({
   subjectId: String,
@@ -73,7 +73,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['next', 'save']);
 
-const TOTAL_SEC = 10 * 60;
+const TOTAL_SEC = 15 * 60;
 const init = props.initialState;
 const remaining = ref(
   init?.timerRemaining != null && init.timerRemaining > 0 && init.timerRemaining <= TOTAL_SEC ? init.timerRemaining : TOTAL_SEC

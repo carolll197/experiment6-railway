@@ -162,6 +162,9 @@ function runSchema() {
     big_idea TEXT,
     highlight_scene TEXT,
     slogan TEXT,
+    ai_big_idea TEXT,
+    ai_highlight_scene TEXT,
+    ai_slogan TEXT,
     submitted_at TEXT,
     is_auto_saved INTEGER DEFAULT 0,
     created_at TEXT,
@@ -203,6 +206,9 @@ function runSchema() {
     ['study1_subject_plans', 'slogan', 'TEXT'],
     ['study2_subject_plans', 'ai_done_time', 'TEXT'],
     ['study2_subject_plans', 'chat_log', 'TEXT'],
+    ['study2_subject_plans', 'ai_big_idea', 'TEXT'],
+    ['study2_subject_plans', 'ai_highlight_scene', 'TEXT'],
+    ['study2_subject_plans', 'ai_slogan', 'TEXT'],
   ];
   for (const [table, col, type] of migrations) {
     try {

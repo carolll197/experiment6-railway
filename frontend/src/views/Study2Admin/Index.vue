@@ -168,11 +168,12 @@
           <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
-                <tr><th :colspan="6" class="text-table-head">研究二/过程组对话记录</th></tr>
+                <tr><th :colspan="7" class="text-table-head">研究二/过程组对话记录</th></tr>
                 <tr>
                   <th class="text-table-head">被试编号</th><th class="text-table-head">被试姓名</th>
                   <th class="text-table-head">第1轮输入</th><th class="text-table-head">第2轮输入</th><th class="text-table-head">第3轮输入</th>
                   <th class="text-table-head">完整对话</th>
+                  <th class="text-table-head">AI输出方案</th>
                 </tr>
               </thead>
               <tbody>
@@ -183,6 +184,7 @@
                   <td class="cell-body">{{ r.round2 }}</td>
                   <td class="cell-body">{{ r.round3 }}</td>
                   <td><button type="button" class="btn-link" @click="showChat(r)">查看</button></td>
+                  <td><button type="button" class="btn-link" :disabled="!hasAiPlan(r)" @click="showAiPlan(r)">查看</button></td>
                 </tr>
               </tbody>
             </table>
@@ -209,6 +211,22 @@
         <div style="text-align: right; margin-top: 12px;"><button type="button" class="btn-primary" @click="chatModalVisible = false">关闭</button></div>
       </div>
     </div>
+
+    <!-- AI输出方案弹窗 -->
+    <div v-if="aiPlanModalVisible" class="modal-overlay" @click.self="aiPlanModalVisible = false">
+      <div class="modal-box">
+        <h3 class="text-h2">AI输出方案 - {{ aiPlanModalData.subject_id }}</h3>
+        <div class="ai-plan-body">
+          <p class="ai-plan-label">模块1：核心创意点与比喻</p>
+          <p class="ai-plan-text">{{ aiPlanModalData.ai_big_idea || '—' }}</p>
+          <p class="ai-plan-label">模块2：高光画面描述</p>
+          <p class="ai-plan-text">{{ aiPlanModalData.ai_highlight_scene || '—' }}</p>
+          <p class="ai-plan-label">模块3：主打广告语</p>
+          <p class="ai-plan-text">{{ aiPlanModalData.ai_slogan || '—' }}</p>
+        </div>
+        <div style="text-align: right; margin-top: 12px;"><button type="button" class="btn-primary" @click="aiPlanModalVisible = false">关闭</button></div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -229,6 +247,8 @@ const selectedIds = ref(new Set());
 const chatModalVisible = ref(false);
 const chatModalData = ref({});
 const chatModalMessages = ref([]);
+const aiPlanModalVisible = ref(false);
+const aiPlanModalData = ref({});
 
 const planCols = [
   { key: 'subject_id', label: '被试编号' }, { key: 'name', label: '被试姓名' }, { key: 'group_type', label: '组别' },
@@ -320,6 +340,18 @@ function showChat(row) {
   chatModalData.value = row;
   chatModalMessages.value = row.messages || [];
   chatModalVisible.value = true;
+}
+function hasAiPlan(row) {
+  return (row.ai_big_idea && row.ai_big_idea.trim()) || (row.ai_highlight_scene && row.ai_highlight_scene.trim()) || (row.ai_slogan && row.ai_slogan.trim());
+}
+function showAiPlan(row) {
+  aiPlanModalData.value = {
+    subject_id: row.subject_id,
+    ai_big_idea: row.ai_big_idea || '',
+    ai_highlight_scene: row.ai_highlight_scene || '',
+    ai_slogan: row.ai_slogan || '',
+  };
+  aiPlanModalVisible.value = true;
 }
 
 // Export URLs
@@ -447,5 +479,8 @@ watch(
 .chat-log-body { max-height: 50vh; overflow: auto; }
 .chat-user { margin: 8px 0; color: var(--color-primary); }
 .chat-ai { margin: 8px 0; color: #333; }
+.ai-plan-body { max-height: 60vh; overflow: auto; }
+.ai-plan-label { font-weight: 600; margin: 12px 0 4px; }
+.ai-plan-text { white-space: pre-wrap; word-break: break-word; margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
 @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
 </style>

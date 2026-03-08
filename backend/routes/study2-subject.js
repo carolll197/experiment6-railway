@@ -119,7 +119,7 @@ study2SubjectRouter.post('/cse', (req, res) => {
   }
 });
 
-// 提交研究二方案
+// 提交研究二方案（过程组可带 ai_big_idea, ai_highlight_scene, ai_slogan 为 AI 第一次生成的方案）
 study2SubjectRouter.post('/submit', (req, res) => {
   try {
     const db = req.app.get('db');
@@ -130,6 +130,9 @@ study2SubjectRouter.post('/submit', (req, res) => {
       big_idea,
       highlight_scene,
       slogan,
+      ai_big_idea,
+      ai_highlight_scene,
+      ai_slogan,
       is_auto_saved = 0,
       startTime,
       endTime,
@@ -148,8 +151,8 @@ study2SubjectRouter.post('/submit', (req, res) => {
     const chatLogStr = chat_log ? (typeof chat_log === 'string' ? chat_log : JSON.stringify(chat_log)) : null;
     db.prepare(`
       INSERT INTO study2_subject_plans
-        (subject_id, name, group_type, big_idea, highlight_scene, slogan, submitted_at, is_auto_saved, created_at, start_time, end_time, ai_done_time, chat_log)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (subject_id, name, group_type, big_idea, highlight_scene, slogan, ai_big_idea, ai_highlight_scene, ai_slogan, submitted_at, is_auto_saved, created_at, start_time, end_time, ai_done_time, chat_log)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       subject_id,
       name,
@@ -157,6 +160,9 @@ study2SubjectRouter.post('/submit', (req, res) => {
       big_idea ?? '',
       highlight_scene ?? '',
       slogan ?? '',
+      ai_big_idea ?? null,
+      ai_highlight_scene ?? null,
+      ai_slogan ?? null,
       submittedAt,
       is_auto_saved ? 1 : 0,
       submittedAt,
@@ -233,18 +239,23 @@ study2SubjectRouter.post('/chat', async (req, res) => {
   }
 });
 
-// 随机获取过程组方案（结果组使用）
+// 随机获取过程组 AI 第一次生成的方案（结果组使用，无放回：优先返回有 ai_* 且未被分配次数最多的）
 study2SubjectRouter.get('/random-plan', (req, res) => {
   try {
     const db = req.app.get('db');
     const plans = db.prepare(
-      'SELECT * FROM study2_subject_plans WHERE group_type = ?'
+      `SELECT * FROM study2_subject_plans WHERE group_type = ? AND (ai_big_idea IS NOT NULL AND ai_big_idea != '' OR ai_highlight_scene IS NOT NULL OR ai_slogan IS NOT NULL)`
     ).all('process');
     if (!plans || plans.length === 0) {
       return res.status(404).json({ error: '暂无可用方案' });
     }
     const idx = Math.floor(Math.random() * plans.length);
-    res.json(plans[idx]);
+    const row = plans[idx];
+    res.json({
+      big_idea: row.ai_big_idea ?? row.big_idea ?? '',
+      highlight_scene: row.ai_highlight_scene ?? row.highlight_scene ?? '',
+      slogan: row.ai_slogan ?? row.slogan ?? '',
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });

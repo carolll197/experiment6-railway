@@ -756,6 +756,9 @@ adminRouter.get('/export/study2-plans', (req, res) => {
         核心创意点与设定: r.big_idea,
         高光画面描述: r.highlight_scene,
         主打广告语: r.slogan,
+        'AI方案-核心创意点': r.ai_big_idea || '',
+        'AI方案-高光画面': r.ai_highlight_scene || '',
+        'AI方案-主打广告语': r.ai_slogan || '',
         开始时间: r.start_time,
         AI方案生成时间: r.ai_done_time,
         提交时间: r.submitted_at,
@@ -843,7 +846,7 @@ adminRouter.get('/export/study2-chatlogs', (req, res) => {
   try {
     const db = req.app.get('db');
     const { keyword } = req.query;
-    let sql = `SELECT subject_id, name, chat_log FROM study2_subject_plans WHERE group_type = 'process'`;
+    let sql = `SELECT subject_id, name, chat_log, ai_big_idea, ai_highlight_scene, ai_slogan FROM study2_subject_plans WHERE group_type = 'process'`;
     const params = [];
     if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ?)`; params.push(k, k); }
     sql += ` ORDER BY id`;
@@ -855,6 +858,9 @@ adminRouter.get('/export/study2-chatlogs', (req, res) => {
       const userMsgs = msgs.filter((m) => m.role === 'user');
       const row = { 被试编号: r.subject_id, 被试姓名: r.name };
       for (let i = 0; i < 3; i++) row[`第${i + 1}轮输入`] = userMsgs[i]?.content || '';
+      row['AI方案-核心创意点'] = r.ai_big_idea || '';
+      row['AI方案-高光画面'] = r.ai_highlight_scene || '';
+      row['AI方案-主打广告语'] = r.ai_slogan || '';
       out.push(row);
     }
     const ws = XLSX.utils.json_to_sheet(out);
