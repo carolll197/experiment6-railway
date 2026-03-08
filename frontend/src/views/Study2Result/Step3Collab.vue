@@ -201,14 +201,14 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .round-wrap { min-height: 100vh; background: var(--color-page-bg); padding: 16px; }
 .timer-bar { text-align: center; padding: 8px 0; position: sticky; top: 0; background: var(--color-page-bg); z-index: 10; }
 .collab-wrap .two-cols { width: 90%; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-.left-col { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
+.left-col { display: grid; grid-template-rows: 1fr 2fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
 .left-top, .left-bottom { overflow: auto; padding: 16px; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-eval-section-title),
-.left-top :deep(.brief-content .brief-title) { font-size: 17px; font-weight: 600; }
+.left-top :deep(.brief-content .brief-title) { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-content .brief-subtitle),
-.left-top :deep(.brief-content .text-body) { font-size: 16px; }
+.left-top :deep(.brief-content .text-body) { font-size: 16px; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-content) { line-height: 1.5; }
-.left-top :deep(.eval-dimension) { font-size: 16px; line-height: 1.5; }
+.left-top :deep(.eval-dimension) { font-size: 16px; font-family: "SimSun", "Songti SC", serif; line-height: 1.5; }
 .ai-dialog { background: var(--color-input-bg); border: 1px solid var(--color-secondary); border-radius: 6px; padding: 0; display: flex; flex-direction: column; }
 .ai-header { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border-bottom: 1px solid #e8e8e8; flex-shrink: 0; }
 .ai-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
@@ -227,14 +227,16 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .ai-msg-ai :deep(.ai-body) { font-size: 16px; }
 .ai-done-tip { margin-top: 8px; }
 .right-col { display: flex; flex-direction: column; gap: 20px; max-height: calc(100vh - 80px); overflow: auto; padding: 12px; background: var(--color-page-bg); }
-.right-col .module { padding: 12px; border: 1px solid var(--color-border-line); min-height: 120px; display: flex; flex-direction: column; }
+.right-col .module { padding: 12px; border: 1px solid var(--color-border-line); min-height: 120px; display: flex; flex-direction: column; flex-shrink: 0; }
 .right-col .module-big { min-height: 280px; }
 .right-col .brief-eval-section-title { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
 .right-col .module-hint { font-style: normal; font-size: 15px; color: var(--color-text); line-height: 1.5; font-family: "SimSun", "Songti SC", serif; }
 .right-col .module-hint :deep(.hint-label) { font-weight: 700; }
 .right-col .module-hint :deep(.hint-content) { font-weight: 400; }
+.right-col .module :deep(.base-textarea-wrap) { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; max-height: 180px; }
 .right-col .module :deep(textarea) { flex: 1; min-height: 100px; overflow-y: auto; resize: none; font-size: 16px; font-weight: 700; font-family: "FangSong", "仿宋", "STFangsong", serif; }
-.right-col .module-big :deep(textarea) { min-height: 140px; }
+.right-col .module-big :deep(.base-textarea-wrap) { max-height: 200px; }
+.right-col .module-big :deep(textarea) { min-height: 140px; font-size: 16px; font-weight: 700; font-family: "FangSong", "仿宋", "STFangsong", serif; }
 .right-col .btn-row { margin-top: 24px; padding: 8px 0; display: flex; justify-content: center; }
 .brief-eval-section-title { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
 .spacing-12 { margin-top: 12px; }

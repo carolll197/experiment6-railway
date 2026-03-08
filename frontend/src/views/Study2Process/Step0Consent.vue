@@ -3,7 +3,7 @@
     <h1 class="text-h1 center">知情同意</h1>
     <div class="file-container">
       <p class="text-body"><strong>1. 研究背景与目的</strong> 本研究旨在探索个体在AI辅助下如何进行广告策划与创意构思。</p>
-      <p class="text-body"><strong>2. 实验流程与任务</strong> 本实验预计耗时约12分钟，全程在线进行，您将完成1份广告创意策划案的撰写。</p>
+      <p class="text-body"><strong>2. 实验流程与任务</strong> 本实验预计耗时约15分钟，全程在线进行，您将完成1份广告创意策划案的撰写。</p>
       <p class="text-body"><strong>3. 报酬与奖金机制</strong></p>
       <ul class="text-body">
         <li><strong>基础报酬：</strong> 认真完成所有流程且通过审核的被试，将获得【5元】的基础被试费。</li>

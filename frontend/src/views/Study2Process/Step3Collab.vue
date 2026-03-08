@@ -39,7 +39,7 @@
               </template>
             </div>
             <div class="ai-input-bar" v-if="chatStarted && !chatDone">
-              <input type="text" v-model="userInput" class="ai-input" :placeholder="chatInputPlaceholder" :disabled="aiLoading || chatDone" @keydown.enter="sendUserMessage" />
+              <textarea v-model="userInput" class="ai-input-textarea" :placeholder="chatInputPlaceholder" :disabled="aiLoading || chatDone" rows="3" @keydown.enter.exact.prevent="sendUserMessage" />
               <button type="button" class="ai-send-btn-small" :disabled="!userInput.trim() || aiLoading || chatDone" @click="sendUserMessage">发送</button>
             </div>
             <div v-else-if="chatDone" class="ai-done-bar">
@@ -174,7 +174,7 @@ function buildApiMessages(extraUserMessage) {
 
 async function requestFinalPlan() {
   if (chatDone.value) return;
-  const finalPrompt = '请根据目前对话内容，直接输出最终方案。请严格按以下格式输出：\n模块1：核心创意点与比喻（至少50字）\n（内容）\n模块2：高光画面描述（至少50字）\n（内容）\n模块3：主打广告语\n（内容）';
+  const finalPrompt = '请根据目前对话内容，直接输出最终方案。请严格按以下格式输出：\n模块1：核心创意点与比喻\n（内容）\n模块2：高光画面描述\n（内容）\n模块3：主打广告语\n（内容）';
   aiLoading.value = true;
   try {
     const apiMessages = buildApiMessages(finalPrompt);
@@ -186,7 +186,7 @@ async function requestFinalPlan() {
     const data = await resp.json();
     const aiContent = data.choices?.[0]?.message?.content || data.content || '';
     const parsed = parseAiPlan(aiContent);
-    const displayText = [parsed.big_idea && `模块1：核心创意点与比喻（至少50字）\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述（至少50字）\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
+    const displayText = [parsed.big_idea && `模块1：核心创意点与比喻\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
     chatMessages.value.push({ role: 'assistant', content: displayText, isFinal: true });
     aiGeneratedPlan.value = parsed;
     chatDone.value = true;
@@ -252,7 +252,7 @@ async function sendUserMessage() {
     const isFinal = userRoundCount.value >= 3 || hasModules;
     let displayContent = aiContent;
     if (hasModules) {
-      displayContent = [parsed.big_idea && `模块1：核心创意点与比喻（至少50字）\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述（至少50字）\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
+      displayContent = [parsed.big_idea && `模块1：核心创意点与比喻\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
       aiGeneratedPlan.value = parsed;
       chatDone.value = true;
       aiDoneTime.value = new Date().toISOString();
@@ -349,7 +349,7 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .round-wrap { min-height: 100vh; background: var(--color-page-bg); padding: 16px; }
 .timer-bar { text-align: center; padding: 8px 0; position: sticky; top: 0; background: var(--color-page-bg); z-index: 10; }
 .collab-wrap .two-cols { width: 90%; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
-.left-col { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
+.left-col { display: grid; grid-template-rows: 1fr 2fr; gap: 8px; max-height: calc(100vh - 80px); overflow: hidden; }
 .left-top, .left-bottom { overflow: auto; padding: 16px; font-family: "SimSun", "Songti SC", serif; }
 .left-top :deep(.brief-eval-section-title),
 .left-top :deep(.brief-content .brief-title) { font-size: 17px; font-weight: 600; font-family: "SimSun", "Songti SC", serif; }
@@ -381,10 +381,10 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (saveInterval) clearInte
 .ai-loading { padding: 8px; color: #999; font-style: italic; }
 .ai-done-tip { margin: 8px 0; text-align: center; }
 
-.ai-input-bar { display: flex; gap: 8px; padding: 10px 15px; border-top: 1px solid #e8e8e8; flex-shrink: 0; }
-.ai-input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 18px; font-size: 13px; outline: none; }
-.ai-input:focus { border-color: var(--color-primary); }
-.ai-send-btn-small { padding: 6px 16px; border-radius: 18px; border: 1px solid var(--color-primary); background: var(--color-active-bg); color: var(--color-text); font-size: 13px; cursor: pointer; white-space: nowrap; }
+.ai-input-bar { display: flex; gap: 8px; padding: 10px 15px; border-top: 1px solid #e8e8e8; flex-shrink: 0; align-items: flex-end; }
+.ai-input-textarea { flex: 1; min-height: 4.5em; max-height: 120px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; resize: none; overflow-y: auto; line-height: 1.4; font-family: inherit; }
+.ai-input-textarea:focus { border-color: var(--color-primary); }
+.ai-send-btn-small { padding: 6px 16px; border-radius: 18px; border: 1px solid var(--color-primary); background: var(--color-active-bg); color: var(--color-text); font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .ai-send-btn-small:hover:not(:disabled) { background: var(--color-secondary); }
 .ai-send-btn-small:disabled { opacity: 0.5; cursor: not-allowed; }
 .ai-done-bar { padding: 10px 15px; border-top: 1px solid #e8e8e8; flex-shrink: 0; }
