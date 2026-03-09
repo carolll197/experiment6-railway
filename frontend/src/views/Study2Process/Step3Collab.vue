@@ -2,7 +2,7 @@
   <div class="round-wrap">
     <div class="collab-wrap">
       <div class="timer-bar text-score">{{ timeText }}</div>
-      <div class="timer-note text-hint italic" style="text-align: center; font-size: 12px; margin-bottom: 8px;">创作限时15分钟，倒计时结束将自动保存并提交已填内容</div>
+      <div class="timer-note text-hint italic" style="text-align: center; font-size: 12px; margin-bottom: 8px;">创作限时15分钟，倒计时结束将自动保存并提交已填内容；协作区限时8分钟，8分钟倒计时结束后AI会生成方案供您参考</div>
       <div class="two-cols">
         <div class="left-col panel-border">
           <div class="left-top file-container panel-border">
@@ -16,7 +16,7 @@
               <span class="ai-avatar">AI</span>
               <span class="ai-name">AI创意助手</span>
               <div class="ai-header-lines">
-                <span class="ai-round-hint">（3轮对话完成或倒计时结束后AI将生成方案供您参考）</span>
+                <span class="ai-round-hint">（8分钟倒计时结束后AI会生成方案供您参考）</span>
                 <span class="ai-round-hint tip-line">温馨提示：为保证协作效率，请先阅读题目和右侧产出要求后再开始协作</span>
               </div>
             </div>
@@ -114,9 +114,9 @@ const aiGeneratedPlan = ref(init?.aiGeneratedPlan || null);
 const aiLoading = ref(false);
 const userInput = ref('');
 const chatBody = ref(null);
-const chatInputPlaceholder = computed(() => chatDone.value ? '' : `请输入您的想法（第${userRoundCount.value + 1}/3轮）`);
+const chatInputPlaceholder = computed(() => chatDone.value ? '' : '请输入您的想法');
 
-const systemMessage = { role: 'system', content: kimiSystemPrompt };
+const systemMessage = ref({ role: 'system', content: kimiSystemPrompt });
 
 const MIN_LEN = 50;
 const labels = { big_idea: '核心创意点与设定', highlight_scene: '高光画面描述', slogan: '主打广告语' };
@@ -167,14 +167,16 @@ function scrollChatBottom() {
 }
 
 function buildApiMessages(extraUserMessage) {
-  const list = [systemMessage, ...chatMessages.value.filter((m) => m.role !== 'system').map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))];
-  if (extraUserMessage) list.push({ role: 'user', content: extraUserMessage });
+  const system = { role: 'system', content: (systemMessage.value && systemMessage.value.content) || kimiSystemPrompt };
+  const turns = chatMessages.value.filter((m) => m.role !== 'system').map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: String(m.content ?? '') }));
+  const list = [system, ...turns];
+  if (extraUserMessage) list.push({ role: 'user', content: String(extraUserMessage) });
   return list;
 }
 
 async function requestFinalPlan() {
   if (chatDone.value) return;
-  const finalPrompt = '请根据目前对话内容，直接输出最终方案。请严格按以下格式输出：\n模块1：核心创意点与比喻\n（内容）\n模块2：高光画面描述\n（内容）\n模块3：主打广告语\n（内容）';
+  const finalPrompt = '8分钟讨论已结束。请根据上述对话内容直接输出最终方案，仅输出以下规范格式，不要输出任何其他说明或前缀：\n模块1：核心创意与设定\n（内容）\n模块2：高光画面描述\n（内容）\n模块3：主打广告语\n（内容）';
   aiLoading.value = true;
   try {
     const apiMessages = buildApiMessages(finalPrompt);
@@ -186,7 +188,7 @@ async function requestFinalPlan() {
     const data = await resp.json();
     const aiContent = data.choices?.[0]?.message?.content || data.content || '';
     const parsed = parseAiPlan(aiContent);
-    const displayText = [parsed.big_idea && `模块1：核心创意点与比喻\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
+    const displayText = [parsed.big_idea && `模块1：核心创意与设定\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
     chatMessages.value.push({ role: 'assistant', content: displayText, isFinal: true });
     aiGeneratedPlan.value = parsed;
     chatDone.value = true;
@@ -212,23 +214,24 @@ function startCollaboration() {
       requestFinalPlan();
     }
   }, 1000);
-  const firstRoundPrompt = '请严格按照系统提示中「第一轮：场景与角色」的固定开场白回复，仅输出该段话，不要输出模块1/2/3或最终方案。';
+  const firstRoundPrompt = '请根据系统提示开始对话，先输出你的开场白（询问场景与角色），仅输出该段话，不要输出模块1/2/3或最终方案。';
   aiLoading.value = true;
+  const systemContent = (systemMessage.value && typeof systemMessage.value.content === 'string') ? systemMessage.value.content : kimiSystemPrompt;
   fetch('/api/study2-subject/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      messages: [systemMessage, { role: 'user', content: firstRoundPrompt }],
+      messages: [{ role: 'system', content: systemContent }, { role: 'user', content: firstRoundPrompt }],
       subject_id: props.subjectId,
     }),
   })
     .then((r) => r.json())
     .then((data) => {
-      const content = data.choices?.[0]?.message?.content || '你好！我是你的广告创意助手，我已充分了解题目内容及产出要求。我们一步步来，首先，为了让这款【丑苹果苏打水】脱颖而出，你希望这个故事发生在一个怎样与众不同的场景里（可以是任何一种电影类型或时空场景）？主角是谁，它是什么样的人或物？请把你的脑洞告诉我。';
+      const content = data.choices?.[0]?.message?.content || '你好！我是你的广告创意助手。我们一步步来，首先，为了让这款【丑苹果苏打水】脱颖而出，你希望这个故事发生在一个怎样与众不同的场景里？主角是谁？请把你的脑洞告诉我。';
       chatMessages.value.push({ role: 'assistant', content, isFinal: false });
     })
     .catch(() => {
-      chatMessages.value.push({ role: 'assistant', content: '你好！我是你的广告创意助手，我已充分了解题目内容及产出要求。我们一步步来，首先，为了让这款【丑苹果苏打水】脱颖而出，你希望这个故事发生在一个怎样与众不同的场景里（可以是任何一种电影类型或时空场景）？主角是谁，它是什么样的人或物？请把你的脑洞告诉我。', isFinal: false });
+      chatMessages.value.push({ role: 'assistant', content: '你好！我是你的广告创意助手。我们一步步来，首先，为了让这款【丑苹果苏打水】脱颖而出，你希望这个故事发生在一个怎样与众不同的场景里？主角是谁？请把你的脑洞告诉我。', isFinal: false });
     })
     .finally(() => { aiLoading.value = false; scrollChatBottom(); emitSave(); });
 }
@@ -253,23 +256,18 @@ async function sendUserMessage() {
     let aiContent = data.choices?.[0]?.message?.content || data.content || '';
     if (!aiContent || typeof aiContent !== 'string') aiContent = 'AI 暂时无法回复，请稍后再试。';
     const parsed = parseAiPlan(aiContent);
-    const hasModules = parsed.big_idea || parsed.highlight_scene || parsed.slogan;
-    const roundComplete = userRoundCount.value >= 3;
-    const acceptAsFinal = hasModules && roundComplete;
+    const hasAllModules = parsed.big_idea && parsed.highlight_scene && parsed.slogan;
     let displayContent = aiContent;
-    if (hasModules) {
-      displayContent = [parsed.big_idea && `模块1：核心创意点与比喻\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
-      if (acceptAsFinal) {
-        aiGeneratedPlan.value = parsed;
-        chatDone.value = true;
-        aiDoneTime.value = new Date().toISOString();
-        if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
-      }
+    let isFinal = false;
+    if (hasAllModules) {
+      displayContent = [parsed.big_idea && `模块1：核心创意与设定\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
+      isFinal = true;
+      aiGeneratedPlan.value = parsed;
+      chatDone.value = true;
+      aiDoneTime.value = new Date().toISOString();
+      if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
     }
-    chatMessages.value.push({ role: 'assistant', content: displayContent, isFinal: acceptAsFinal });
-    if (roundComplete && !acceptAsFinal) {
-      await requestFinalPlan();
-    }
+    chatMessages.value.push({ role: 'assistant', content: displayContent, isFinal });
   } catch (e) {
     chatMessages.value.push({ role: 'assistant', content: 'AI 请求失败，请稍后再试。', isFinal: false });
   }
@@ -299,6 +297,8 @@ function submitPlan(isAutoSaved) {
   if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
   const endTime = new Date().toISOString();
   const plan = aiGeneratedPlan.value || {};
+  const userMsgs = chatMessages.value.filter((m) => m.role === 'user');
+  const assistantMsgs = chatMessages.value.filter((m) => m.role === 'assistant' && !m.isFinal);
   const payload = {
     subject_id: props.subjectId,
     name: props.name,
@@ -314,10 +314,25 @@ function submitPlan(isAutoSaved) {
     endTime,
     ai_done_time: aiDoneTime.value || '',
     chat_log: JSON.stringify(chatMessages.value),
+    interaction_rounds: userMsgs.length,
+    user_input_chars: userMsgs.reduce((sum, m) => sum + String(m.content || '').length, 0),
+    ai_ask_count: assistantMsgs.length,
+    user_choice_count: 0,
   };
   fetch('/api/study2-subject/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    .then(() => emit('next'))
-    .catch(() => emit('next'));
+    .then(async (r) => {
+      const data = r.ok ? null : await r.json().catch(() => ({}));
+      if (!r.ok) {
+        failReason.value = data?.error || `提交失败（${r.status}）`;
+        showFailModal.value = true;
+        return;
+      }
+      emit('next');
+    })
+    .catch((e) => {
+      failReason.value = e.message || '网络错误，请重试';
+      showFailModal.value = true;
+    });
 }
 
 function onSubmit() {
@@ -332,6 +347,9 @@ function onConfirmAutoSaved() {
 }
 
 onMounted(() => {
+  fetch('/api/study2-subject/prompt').then((r) => r.json()).then((d) => {
+    if (d && typeof d.content === 'string' && d.content.trim()) systemMessage.value = { role: 'system', content: d.content.trim() };
+  }).catch(() => {});
   if (!startTime.value) startTime.value = new Date().toISOString();
   if (chatStarted.value && !chatDone.value && chatTimerRemaining.value > 0 && !chatTimer) {
     chatTimer = setInterval(() => {

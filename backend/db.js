@@ -209,6 +209,12 @@ function runSchema() {
     ['study2_subject_plans', 'ai_big_idea', 'TEXT'],
     ['study2_subject_plans', 'ai_highlight_scene', 'TEXT'],
     ['study2_subject_plans', 'ai_slogan', 'TEXT'],
+    ['study2_subject_plans', 'interaction_rounds', 'INTEGER'],
+    ['study2_subject_plans', 'user_input_chars', 'INTEGER'],
+    ['study2_subject_plans', 'ai_ask_count', 'INTEGER'],
+    ['study2_subject_plans', 'user_choice_count', 'INTEGER'],
+    ['study2_subject_plans', 'assigned_plan_subject_id', 'TEXT'],
+    ['study2_subject_plans', 'assigned_plan_name', 'TEXT'],
   ];
   for (const [table, col, type] of migrations) {
     try {

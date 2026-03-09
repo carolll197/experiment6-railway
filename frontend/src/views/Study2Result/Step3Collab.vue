@@ -94,6 +94,9 @@ const aiSent = ref(!!init?.aiSent);
 const aiNodes = ref(init?.aiSent ? [...AI_NODES] : []);
 const aiDone = ref(!!init?.aiDone);
 const aiSuggestionText = ref(init?.aiSuggestionText || '');
+const assignedPlanSubjectId = ref(init?.assignedPlanSubjectId || '');
+const assignedPlanName = ref(init?.assignedPlanName || '');
+const assignedPlanContent = ref(init?.assignedPlanContent || null);
 
 const MIN_LEN = 50;
 const labels = { big_idea: '核心创意点与设定', highlight_scene: '高光画面描述', slogan: '主打广告语' };
@@ -117,6 +120,9 @@ function emitSave() {
     aiSuggestionText: aiSuggestionText.value,
     startTime: startTime.value,
     aiDoneTime: aiDoneTime.value,
+    assignedPlanSubjectId: assignedPlanSubjectId.value,
+    assignedPlanName: assignedPlanName.value,
+    assignedPlanContent: assignedPlanContent.value,
   });
 }
 
@@ -133,13 +139,16 @@ function sendAi() {
         .then((r) => r.json())
         .then((data) => {
           if (data && (data.big_idea || data.highlight_scene || data.slogan)) {
+            assignedPlanSubjectId.value = data.subject_id || '';
+            assignedPlanName.value = data.name || '';
+            assignedPlanContent.value = { big_idea: data.big_idea || '', highlight_scene: data.highlight_scene || '', slogan: data.slogan || '' };
             const lines = [];
-            if (data.big_idea) lines.push(`模块1：核心创意点与设定（The Big Idea）\n${data.big_idea}`);
+            if (data.big_idea) lines.push(`模块1：核心创意与设定\n${data.big_idea}`);
             if (data.highlight_scene) lines.push(`模块2：高光画面描述（The Highlight Scene）\n${data.highlight_scene}`);
             if (data.slogan) lines.push(`模块3：主打广告语（The Slogan）\n${data.slogan}`);
             aiSuggestionText.value = lines.join('\n');
           } else {
-            aiSuggestionText.value = '模块1：核心创意点与设定（The Big Idea）\n暂无过程组方案可供参考。\n模块2：高光画面描述（The Highlight Scene）\n暂无。\n模块3：主打广告语（The Slogan）\n暂无。';
+            aiSuggestionText.value = '模块1：核心创意与设定\n暂无过程组方案可供参考。\n模块2：高光画面描述\n暂无。\n模块3：主打广告语\n暂无。';
           }
           aiDone.value = true;
           aiDoneTime.value = new Date().toISOString();
@@ -170,6 +179,11 @@ function submitPlan(isAutoSaved) {
       startTime: startTime.value || endTime, endTime,
       ai_done_time: aiDoneTime.value || '',
       chat_log: '',
+      assigned_plan_subject_id: assignedPlanSubjectId.value || '',
+      assigned_plan_name: assignedPlanName.value || '',
+      ai_big_idea: assignedPlanContent.value?.big_idea ?? '',
+      ai_highlight_scene: assignedPlanContent.value?.highlight_scene ?? '',
+      ai_slogan: assignedPlanContent.value?.slogan ?? '',
     }),
   }).then(() => emit('next')).catch(() => emit('next'));
 }

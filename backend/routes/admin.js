@@ -846,7 +846,7 @@ adminRouter.get('/export/study2-chatlogs', (req, res) => {
   try {
     const db = req.app.get('db');
     const { keyword } = req.query;
-    let sql = `SELECT subject_id, name, chat_log, ai_big_idea, ai_highlight_scene, ai_slogan FROM study2_subject_plans WHERE group_type = 'process'`;
+    let sql = `SELECT subject_id, name, chat_log, ai_big_idea, ai_highlight_scene, ai_slogan, interaction_rounds, user_input_chars, ai_ask_count, user_choice_count FROM study2_subject_plans WHERE group_type = 'process'`;
     const params = [];
     if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ?)`; params.push(k, k); }
     sql += ` ORDER BY id`;
@@ -856,8 +856,13 @@ adminRouter.get('/export/study2-chatlogs', (req, res) => {
       let msgs = [];
       try { msgs = JSON.parse(r.chat_log || '[]'); } catch (_) {}
       const userMsgs = msgs.filter((m) => m.role === 'user');
+      const assistantNonFinal = msgs.filter((m) => m.role === 'assistant' && !m.isFinal);
       const row = { 被试编号: r.subject_id, 被试姓名: r.name };
-      for (let i = 0; i < 3; i++) row[`第${i + 1}轮输入`] = userMsgs[i]?.content || '';
+      for (let i = 0; i < 5; i++) row[`第${i + 1}轮输入`] = userMsgs[i]?.content || '';
+      row['互动轮次'] = r.interaction_rounds != null ? r.interaction_rounds : userMsgs.length;
+      row['用户输入字数'] = r.user_input_chars != null ? r.user_input_chars : userMsgs.reduce((s, m) => s + String(m.content || '').length, 0);
+      row['AI提问次数'] = r.ai_ask_count != null ? r.ai_ask_count : assistantNonFinal.length;
+      row['用户选择次数'] = r.user_choice_count != null ? r.user_choice_count : 0;
       row['AI方案-核心创意点'] = r.ai_big_idea || '';
       row['AI方案-高光画面'] = r.ai_highlight_scene || '';
       row['AI方案-主打广告语'] = r.ai_slogan || '';
@@ -868,6 +873,78 @@ adminRouter.get('/export/study2-chatlogs', (req, res) => {
     XLSX.utils.book_append_sheet(wb, ws, '过程组对话记录');
     const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     res.setHeader('Content-Disposition', 'attachment; filename=study2_chatlogs.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 导出过程组完整对话记录 Excel（含完整对话全文一列）
+adminRouter.get('/export/study2-chatlogs-full', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword } = req.query;
+    let sql = `SELECT subject_id, name, chat_log, ai_big_idea, ai_highlight_scene, ai_slogan, interaction_rounds, user_input_chars, ai_ask_count, user_choice_count FROM study2_subject_plans WHERE group_type = 'process'`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ?)`; params.push(k, k); }
+    sql += ` ORDER BY id`;
+    const rows = db.prepare(sql).all(...params);
+    const out = [];
+    for (const r of rows) {
+      let msgs = [];
+      try { msgs = JSON.parse(r.chat_log || '[]'); } catch (_) {}
+      const fullLines = msgs.filter((m) => m.role !== 'system').map((m) => (m.role === 'user' ? '被试：' : 'AI：') + String(m.content || '').replace(/\n/g, '\n  '));
+      const fullChat = fullLines.join('\n');
+      const userMsgs = msgs.filter((m) => m.role === 'user');
+      const assistantNonFinal = msgs.filter((m) => m.role === 'assistant' && !m.isFinal);
+      const rowOut = {
+        被试编号: r.subject_id,
+        被试姓名: r.name,
+        完整对话内容: fullChat,
+        互动轮次: r.interaction_rounds != null ? r.interaction_rounds : userMsgs.length,
+        用户输入字数: r.user_input_chars != null ? r.user_input_chars : userMsgs.reduce((s, m) => s + String(m.content || '').length, 0),
+        AI提问次数: r.ai_ask_count != null ? r.ai_ask_count : assistantNonFinal.length,
+        用户选择次数: r.user_choice_count != null ? r.user_choice_count : 0,
+        'AI方案-核心创意点': r.ai_big_idea || '',
+        'AI方案-高光画面': r.ai_highlight_scene || '',
+        'AI方案-主打广告语': r.ai_slogan || '',
+      };
+      out.push(rowOut);
+    }
+    const ws = XLSX.utils.json_to_sheet(out);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '过程组完整对话');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study2_chatlogs_full.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究二 - 导出结果组AI方案详情 Excel
+adminRouter.get('/export/study2-result-ai-plans', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword } = req.query;
+    let sql = `SELECT p.subject_id, p.name, p.assigned_plan_subject_id, p.assigned_plan_name, p.ai_big_idea, p.ai_highlight_scene, p.ai_slogan, p.submitted_at FROM study2_subject_plans p WHERE p.group_type = 'result'`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (p.subject_id LIKE ? OR p.name LIKE ? OR p.assigned_plan_subject_id LIKE ? OR p.assigned_plan_name LIKE ?)`; params.push(k, k, k, k); }
+    sql += ` ORDER BY p.id`;
+    const rows = db.prepare(sql).all(...params);
+    const out = rows.map((r) => ({
+      结果组被试编号: r.subject_id,
+      结果组被试姓名: r.name,
+      抽到的过程组被试编号: r.assigned_plan_subject_id || '',
+      抽到的过程组被试姓名: r.assigned_plan_name || '',
+      'AI方案-核心创意点': r.ai_big_idea || '',
+      'AI方案-高光画面': r.ai_highlight_scene || '',
+      'AI方案-主打广告语': r.ai_slogan || '',
+      提交时间: r.submitted_at || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(out);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '结果组AI方案详情');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study2_result_ai_plans.xlsx');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buf);
   } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }

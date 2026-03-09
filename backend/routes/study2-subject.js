@@ -1,5 +1,9 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const study2SubjectRouter = Router();
 
 function nowStr() {
@@ -15,6 +19,20 @@ function getClientIp(req) {
 function getFlow(group) {
   return group === 'result' ? 'study2-result' : 'study2-process';
 }
+
+const promptPath = path.join(__dirname, '..', '..', 'materials', '提示词.txt');
+
+// 获取过程组提示词（从 materials/提示词.txt 读取，UTF-8，保证不乱码）
+study2SubjectRouter.get('/prompt', (req, res) => {
+  try {
+    if (!fs.existsSync(promptPath)) return res.status(404).json({ error: '提示词文件不存在' });
+    const content = fs.readFileSync(promptPath, 'utf8');
+    res.json({ content });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // 获取研究二进度
 study2SubjectRouter.get('/progress', (req, res) => {
@@ -138,6 +156,12 @@ study2SubjectRouter.post('/submit', (req, res) => {
       endTime,
       ai_done_time,
       chat_log,
+      interaction_rounds,
+      user_input_chars,
+      ai_ask_count,
+      user_choice_count,
+      assigned_plan_subject_id,
+      assigned_plan_name,
     } = req.body;
     if (!subject_id || !name) {
       return res.status(400).json({ error: '缺少必填字段' });
@@ -151,8 +175,8 @@ study2SubjectRouter.post('/submit', (req, res) => {
     const chatLogStr = chat_log ? (typeof chat_log === 'string' ? chat_log : JSON.stringify(chat_log)) : null;
     db.prepare(`
       INSERT INTO study2_subject_plans
-        (subject_id, name, group_type, big_idea, highlight_scene, slogan, ai_big_idea, ai_highlight_scene, ai_slogan, submitted_at, is_auto_saved, created_at, start_time, end_time, ai_done_time, chat_log)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (subject_id, name, group_type, big_idea, highlight_scene, slogan, ai_big_idea, ai_highlight_scene, ai_slogan, submitted_at, is_auto_saved, created_at, start_time, end_time, ai_done_time, chat_log, interaction_rounds, user_input_chars, ai_ask_count, user_choice_count, assigned_plan_subject_id, assigned_plan_name)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       subject_id,
       name,
@@ -169,7 +193,13 @@ study2SubjectRouter.post('/submit', (req, res) => {
       startTime || submittedAt,
       endTime || submittedAt,
       ai_done_time || null,
-      chatLogStr
+      chatLogStr,
+      interaction_rounds ?? null,
+      user_input_chars ?? null,
+      ai_ask_count ?? null,
+      user_choice_count ?? null,
+      assigned_plan_subject_id ?? null,
+      assigned_plan_name ?? null
     );
     db.run('INSERT OR REPLACE INTO study2_subjects (subject_id, name, group_type) VALUES (?, ?, ?)', [subject_id, name, gt]);
     res.json({ ok: true });
@@ -212,13 +242,16 @@ study2SubjectRouter.post('/posttest', (req, res) => {
   }
 });
 
-// AI 对话代理（过程组使用 Kimi/Moonshot API）
+// AI 对话代理（过程组使用 Kimi/月之暗面 Moonshot API，api.moonshot.cn）
+// 每次请求独立：不存储、不复用任何会话状态，仅将本次收到的 messages 深拷贝后转发，确保无历史记录影响
+// 可选模型：moonshot-v1-8k / moonshot-v1-32k / moonshot-v1-128k / kimi-k2-preview / kimi-k2-0905-preview
 study2SubjectRouter.post('/chat', async (req, res) => {
   try {
     const { messages, subject_id } = req.body;
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: '缺少 messages' });
     }
+    const freshMessages = JSON.parse(JSON.stringify(messages));
     const resp = await fetch('https://api.moonshot.cn/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -226,8 +259,8 @@ study2SubjectRouter.post('/chat', async (req, res) => {
         Authorization: 'Bearer sk-AOLeSbacJoud5KTCvpKVhmsNCiVOwYXMuIQE3NCbuTmBm0Js',
       },
       body: JSON.stringify({
-        model: 'moonshot-v1-8k',
-        messages: messages,
+        model: 'kimi-k2-0905-preview',
+        messages: freshMessages,
         temperature: 0.8,
       }),
     });
@@ -252,6 +285,8 @@ study2SubjectRouter.get('/random-plan', (req, res) => {
     const idx = Math.floor(Math.random() * plans.length);
     const row = plans[idx];
     res.json({
+      subject_id: row.subject_id ?? '',
+      name: row.name ?? '',
       big_idea: row.ai_big_idea ?? row.big_idea ?? '',
       highlight_scene: row.ai_highlight_scene ?? row.highlight_scene ?? '',
       slogan: row.ai_slogan ?? row.slogan ?? '',

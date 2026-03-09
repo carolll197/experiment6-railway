@@ -17,6 +17,12 @@
         </template>
         <template v-else-if="filters.dataType === 'chatlogs'">
           <a :href="exportChatlogsUrl" class="btn-primary" download>导出对话记录</a>
+          <a :href="exportChatlogsFullUrl" class="btn-primary" download>导出完整对话记录</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedIds.size === 0" @click="deleteSelected">批量删除选中</button>
+        </template>
+        <template v-else-if="filters.dataType === 'resultAiPlans'">
+          <a :href="exportResultAiPlansUrl" class="btn-primary" download>导出结果组AI方案详情</a>
+          <button type="button" class="btn-primary btn-danger" :disabled="selectedIds.size === 0" @click="deleteSelected">批量删除选中</button>
         </template>
       </div>
     </header>
@@ -30,9 +36,10 @@
             <option value="cse">CSE量表数据</option>
             <option value="posttest">后测量表数据</option>
             <option value="chatlogs">对话记录（过程组）</option>
+            <option value="resultAiPlans">结果组AI方案详情</option>
           </select>
 
-          <template v-if="filters.dataType !== 'chatlogs'">
+          <template v-if="filters.dataType !== 'chatlogs' && filters.dataType !== 'resultAiPlans'">
             <label class="filter-label">组别</label>
             <select v-model="filters.groupType" class="filter-select">
               <option value="">全部</option>
@@ -168,21 +175,30 @@
           <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
-                <tr><th :colspan="7" class="text-table-head">研究二/过程组对话记录</th></tr>
+                <tr><th :colspan="13" class="text-table-head">研究二/过程组对话记录</th></tr>
                 <tr>
+                  <th class="text-table-head th-checkbox"><input type="checkbox" :checked="allChatSelected" :indeterminate="someChatSelected" @change="toggleAllChats" /></th>
                   <th class="text-table-head">被试编号</th><th class="text-table-head">被试姓名</th>
-                  <th class="text-table-head">第1轮输入</th><th class="text-table-head">第2轮输入</th><th class="text-table-head">第3轮输入</th>
+                  <th class="text-table-head">第1轮输入</th><th class="text-table-head">第2轮输入</th><th class="text-table-head">第3轮输入</th><th class="text-table-head">第4轮输入</th><th class="text-table-head">第5轮输入</th>
+                  <th class="text-table-head">互动轮次</th><th class="text-table-head">用户输入字数</th><th class="text-table-head">AI提问次数</th><th class="text-table-head">用户选择次数</th>
                   <th class="text-table-head">完整对话</th>
                   <th class="text-table-head">AI输出方案</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="r in paginatedChats" :key="r.subject_id">
+                <tr v-for="r in paginatedChats" :key="r.id">
+                  <td class="td-checkbox"><input type="checkbox" :checked="selectedIds.has(r.id)" @change="toggleId(r.id)" /></td>
                   <td>{{ r.subject_id }}</td>
                   <td class="cell-name">{{ r.display_name || r.name || '—' }}</td>
                   <td class="cell-body">{{ r.round1 }}</td>
                   <td class="cell-body">{{ r.round2 }}</td>
                   <td class="cell-body">{{ r.round3 }}</td>
+                  <td class="cell-body">{{ r.round4 }}</td>
+                  <td class="cell-body">{{ r.round5 }}</td>
+                  <td class="text-score">{{ r.interaction_rounds ?? '—' }}</td>
+                  <td class="text-score">{{ r.user_input_chars ?? '—' }}</td>
+                  <td class="text-score">{{ r.ai_ask_count ?? '—' }}</td>
+                  <td class="text-score">{{ r.user_choice_count ?? '—' }}</td>
                   <td><button type="button" class="btn-link" @click="showChat(r)">查看</button></td>
                   <td><button type="button" class="btn-link" :disabled="!hasAiPlan(r)" @click="showAiPlan(r)">查看</button></td>
                 </tr>
@@ -192,6 +208,43 @@
               <button type="button" class="page-btn" :disabled="page <= 1" @click="page--">上一页</button>
               <span>{{ page }} / {{ totalChatPages }}</span>
               <button type="button" class="page-btn" :disabled="page >= totalChatPages" @click="page++">下一页</button>
+            </div>
+          </div>
+        </template>
+
+        <!-- 结果组AI方案详情 -->
+        <template v-else-if="filters.dataType === 'resultAiPlans'">
+          <div v-if="resultAiPlans.length === 0" class="empty-hint text-hint center">暂无结果组AI方案数据</div>
+          <div v-else class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th :colspan="9" class="text-table-head">研究二/结果组AI方案详情</th></tr>
+                <tr>
+                  <th class="text-table-head th-checkbox"><input type="checkbox" :checked="allResultAiSelected" :indeterminate="someResultAiSelected" @change="toggleAllResultAi" /></th>
+                  <th class="text-table-head">结果组被试编号</th><th class="text-table-head">结果组被试姓名</th>
+                  <th class="text-table-head">抽到的过程组被试编号</th><th class="text-table-head">抽到的过程组被试姓名</th>
+                  <th class="text-table-head">AI方案-核心创意点</th><th class="text-table-head">AI方案-高光画面</th><th class="text-table-head">AI方案-主打广告语</th>
+                  <th class="text-table-head">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in paginatedResultAiPlans" :key="r.id">
+                  <td class="td-checkbox"><input type="checkbox" :checked="selectedIds.has(r.id)" @change="toggleId(r.id)" /></td>
+                  <td>{{ r.subject_id }}</td>
+                  <td class="cell-name">{{ r.display_name || r.name || '—' }}</td>
+                  <td>{{ r.assigned_plan_subject_id || '—' }}</td>
+                  <td class="cell-name">{{ r.assigned_plan_name || '—' }}</td>
+                  <td class="cell-body cell-big-idea">{{ r.ai_big_idea || '—' }}</td>
+                  <td class="cell-body">{{ r.ai_highlight_scene || '—' }}</td>
+                  <td class="cell-body">{{ r.ai_slogan || '—' }}</td>
+                  <td><button type="button" class="btn-link" @click="showResultAiPlanDetail(r)">查看详情</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="totalResultAiPlans > pageSize" class="pagination text-score">
+              <button type="button" class="page-btn" :disabled="page <= 1" @click="page--">上一页</button>
+              <span>{{ page }} / {{ totalResultAiPlansPages }}</span>
+              <button type="button" class="page-btn" :disabled="page >= totalResultAiPlansPages" @click="page++">下一页</button>
             </div>
           </div>
         </template>
@@ -217,7 +270,7 @@
       <div class="modal-box">
         <h3 class="text-h2">AI输出方案 - {{ aiPlanModalData.subject_id }}</h3>
         <div class="ai-plan-body">
-          <p class="ai-plan-label">模块1：核心创意点与比喻</p>
+          <p class="ai-plan-label">模块1：核心创意与设定</p>
           <p class="ai-plan-text">{{ aiPlanModalData.ai_big_idea || '—' }}</p>
           <p class="ai-plan-label">模块2：高光画面描述</p>
           <p class="ai-plan-text">{{ aiPlanModalData.ai_highlight_scene || '—' }}</p>
@@ -238,6 +291,7 @@ const plans = ref([]);
 const cseList = ref([]);
 const posttest = ref([]);
 const chatLogs = ref([]);
+const resultAiPlans = ref([]);
 const sortKey = ref('');
 const sortOrder = ref('asc');
 const page = ref(1);
@@ -335,6 +389,32 @@ function toggleAllPost() { toggleAll(paginatedPost.value); }
 const totalChats = computed(() => chatLogs.value.length);
 const totalChatPages = computed(() => Math.max(1, Math.ceil(totalChats.value / pageSize)));
 const paginatedChats = computed(() => chatLogs.value.slice((page.value - 1) * pageSize, page.value * pageSize));
+const allChatSelected = computed(() => paginatedChats.value.length > 0 && paginatedChats.value.every((r) => selectedIds.value.has(r.id)));
+const someChatSelected = computed(() => paginatedChats.value.some((r) => selectedIds.value.has(r.id)) && !allChatSelected.value);
+function toggleAllChats() {
+  if (paginatedChats.value.every((r) => selectedIds.value.has(r.id))) selectedIds.value = new Set();
+  else selectedIds.value = new Set(paginatedChats.value.map((r) => r.id));
+}
+
+// Result group AI plans
+const totalResultAiPlans = computed(() => resultAiPlans.value.length);
+const totalResultAiPlansPages = computed(() => Math.max(1, Math.ceil(totalResultAiPlans.value / pageSize)));
+const paginatedResultAiPlans = computed(() => resultAiPlans.value.slice((page.value - 1) * pageSize, page.value * pageSize));
+const allResultAiSelected = computed(() => paginatedResultAiPlans.value.length > 0 && paginatedResultAiPlans.value.every((r) => selectedIds.value.has(r.id)));
+const someResultAiSelected = computed(() => paginatedResultAiPlans.value.some((r) => selectedIds.value.has(r.id)) && !allResultAiSelected.value);
+function toggleAllResultAi() {
+  if (paginatedResultAiPlans.value.every((r) => selectedIds.value.has(r.id))) selectedIds.value = new Set();
+  else selectedIds.value = new Set(paginatedResultAiPlans.value.map((r) => r.id));
+}
+function showResultAiPlanDetail(row) {
+  aiPlanModalData.value = {
+    subject_id: row.subject_id,
+    ai_big_idea: row.ai_big_idea || '',
+    ai_highlight_scene: row.ai_highlight_scene || '',
+    ai_slogan: row.ai_slogan || '',
+  };
+  aiPlanModalVisible.value = true;
+}
 
 function showChat(row) {
   chatModalData.value = row;
@@ -378,6 +458,16 @@ const exportChatlogsUrl = computed(() => {
   if (filters.value.keyword) q.set('keyword', filters.value.keyword);
   return `/api/admin/export/study2-chatlogs?${q}`;
 });
+const exportChatlogsFullUrl = computed(() => {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  return `/api/admin/export/study2-chatlogs-full?${q}`;
+});
+const exportResultAiPlansUrl = computed(() => {
+  const q = new URLSearchParams();
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  return `/api/admin/export/study2-result-ai-plans?${q}`;
+});
 
 // Fetch
 function fetchPlans() {
@@ -408,9 +498,32 @@ function fetchChatLogs() {
       let msgs = [];
       try { msgs = JSON.parse(r.chat_log || '[]'); } catch (_) {}
       const userMsgs = msgs.filter((m) => m.role === 'user');
-      return { ...r, messages: msgs, round1: userMsgs[0]?.content || '', round2: userMsgs[1]?.content || '', round3: userMsgs[2]?.content || '' };
+      const assistantNonFinal = msgs.filter((m) => m.role === 'assistant' && !m.isFinal);
+      const interaction_rounds = r.interaction_rounds != null ? r.interaction_rounds : userMsgs.length;
+      const user_input_chars = r.user_input_chars != null ? r.user_input_chars : userMsgs.reduce((s, m) => s + String(m.content || '').length, 0);
+      const ai_ask_count = r.ai_ask_count != null ? r.ai_ask_count : assistantNonFinal.length;
+      const user_choice_count = r.user_choice_count != null ? r.user_choice_count : 0;
+      return {
+        ...r,
+        messages: msgs,
+        round1: userMsgs[0]?.content || '',
+        round2: userMsgs[1]?.content || '',
+        round3: userMsgs[2]?.content || '',
+        round4: userMsgs[3]?.content || '',
+        round5: userMsgs[4]?.content || '',
+        interaction_rounds,
+        user_input_chars,
+        ai_ask_count,
+        user_choice_count,
+      };
     });
   }).catch(() => { chatLogs.value = []; });
+}
+function fetchResultAiPlans() {
+  const q = new URLSearchParams();
+  q.set('group_type', 'result');
+  if (filters.value.keyword) q.set('keyword', filters.value.keyword);
+  fetch(`/api/admin/study2/plans?${q}`).then((r) => r.json()).then((d) => { resultAiPlans.value = Array.isArray(d) ? d : []; }).catch(() => { resultAiPlans.value = []; });
 }
 
 function deleteSelected() {
@@ -421,8 +534,10 @@ function deleteSelected() {
   if (dt === 'plans') url = '/api/admin/study2/plans';
   else if (dt === 'cse') url = '/api/admin/study2/cse';
   else if (dt === 'posttest') url = '/api/admin/study2/posttest';
+  else if (dt === 'chatlogs' || dt === 'resultAiPlans') url = '/api/admin/study2/plans';
   if (!url) return;
-  if (!confirm(`确定删除选中的 ${ids.length} 条数据吗？`)) return;
+  const tip = dt === 'resultAiPlans' ? `确定删除选中的 ${ids.length} 条结果组记录吗？删除后，其对应的过程组AI方案将回到方案池，可被其他结果组再次抽取。` : `确定删除选中的 ${ids.length} 条数据吗？`;
+  if (!confirm(tip)) return;
   fetch(url, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) })
     .then((r) => r.json()).then((d) => { if (d.ok) { selectedIds.value = new Set(); refreshData(); } }).catch(() => {});
 }
@@ -433,6 +548,7 @@ function refreshData() {
   else if (dt === 'cse') fetchCse();
   else if (dt === 'posttest') fetchPosttest();
   else if (dt === 'chatlogs') fetchChatLogs();
+  else if (dt === 'resultAiPlans') fetchResultAiPlans();
 }
 
 watch(
@@ -440,6 +556,7 @@ watch(
   () => { page.value = 1; selectedIds.value = new Set(); sortKey.value = ''; refreshData(); },
   { immediate: true }
 );
+
 </script>
 
 <style scoped>
