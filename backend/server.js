@@ -28,12 +28,17 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
 
+// 每次部署使用新的 deployId，重新部署后进度视为过期、从头开始
+const DEPLOY_ID = process.env.RAILWAY_DEPLOYMENT_ID || process.env.DEPLOY_ID || `local-${Date.now()}`;
+
 async function start() {
   console.log('[start] PORT=%s (from env: %s)', PORT, process.env.PORT || '(none)');
+  console.log('[start] DEPLOY_ID=%s', DEPLOY_ID);
 
   await initDb();
   const db = getDb();
   app.set('db', db);
+  app.set('deployId', DEPLOY_ID);
 
   app.use('/api/pre-subject', preSubjectRouter);
   app.use('/api/pre-expert', preExpertRouter);

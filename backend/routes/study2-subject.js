@@ -34,10 +34,11 @@ study2SubjectRouter.get('/prompt', (req, res) => {
   }
 });
 
-// 获取研究二进度
+// 获取研究二进度（重新部署后 deployId 变化，旧进度作废，从头开始）
 study2SubjectRouter.get('/progress', (req, res) => {
   try {
     const db = req.app.get('db');
+    const deployId = req.app.get('deployId');
     const visitorId = req.headers['x-visitor-id'] || req.query.visitor_id || '';
     if (!visitorId.trim()) return res.json({ submitted: false, step: 0 });
     const flow = getFlow(req.query.group);
@@ -45,11 +46,12 @@ study2SubjectRouter.get('/progress', (req, res) => {
       'SELECT step, data_json, subject_id, name, submitted_at FROM visitor_progress WHERE visitor_id = ? AND flow = ?'
     ).get(visitorId.trim(), flow);
     if (!row) return res.json({ submitted: false, step: 0 });
-    if (row.submitted_at) return res.json({ submitted: true });
     let data = {};
     try {
       if (row.data_json) data = JSON.parse(row.data_json);
     } catch (_) {}
+    if (deployId && data.deploy_id !== deployId) return res.json({ submitted: false, step: 0 });
+    if (row.submitted_at) return res.json({ submitted: true });
     res.json({
       submitted: false,
       step: row.step ?? 0,
@@ -74,10 +76,12 @@ study2SubjectRouter.post('/progress', (req, res) => {
     const ip = getClientIp(req);
     const { step, subject_id, name, data: progressData, submitted, startTime, endTime, group_type } = req.body;
     const flow = getFlow(group_type);
+    const deployId = req.app.get('deployId');
     const dataJson = JSON.stringify({
       ...(progressData || {}),
       startTime: startTime,
       endTime: endTime,
+      deploy_id: deployId,
     });
     const updatedAt = nowStr();
     const isDone = submitted === true;
