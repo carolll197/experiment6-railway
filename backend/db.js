@@ -191,6 +191,42 @@ function runSchema() {
     control_1 INTEGER, control_2 INTEGER, control_3 INTEGER,
     created_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS study3_subjects (
+    subject_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    group_type TEXT NOT NULL DEFAULT 'process'
+  );
+  CREATE TABLE IF NOT EXISTS study3_cse_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id TEXT NOT NULL,
+    group_type TEXT NOT NULL DEFAULT 'process',
+    q1 INTEGER, q2 INTEGER, q3 INTEGER, q4 INTEGER,
+    created_at TEXT
+  );
+  CREATE TABLE IF NOT EXISTS study3_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    group_type TEXT NOT NULL,
+    assigned_plan_subject_id TEXT,
+    assigned_plan_name TEXT,
+    ai_big_idea TEXT,
+    ai_highlight_scene TEXT,
+    ai_slogan TEXT,
+    chat_log TEXT,
+    emotion_1 INTEGER, emotion_2 INTEGER, emotion_3 INTEGER, emotion_4 INTEGER, emotion_5 INTEGER,
+    gap_1 INTEGER, gap_2 INTEGER,
+    satisfaction_1 INTEGER, satisfaction_2 INTEGER, satisfaction_3 INTEGER, satisfaction_4 INTEGER,
+    ownership_1 INTEGER, ownership_2 INTEGER, ownership_3 INTEGER, ownership_4 INTEGER,
+    control_1 INTEGER, control_2 INTEGER, control_3 INTEGER,
+    open_text TEXT,
+    collab_start_time TEXT,
+    ai_done_time TEXT,
+    rating_start_time TEXT,
+    end_time TEXT,
+    submitted_at TEXT,
+    created_at TEXT
+  );
   `;
   rawDb.exec(schema);
 
@@ -215,6 +251,18 @@ function runSchema() {
     ['study2_subject_plans', 'user_choice_count', 'INTEGER'],
     ['study2_subject_plans', 'assigned_plan_subject_id', 'TEXT'],
     ['study2_subject_plans', 'assigned_plan_name', 'TEXT'],
+    ['study3_records', 'assigned_plan_subject_id', 'TEXT'],
+    ['study3_records', 'assigned_plan_name', 'TEXT'],
+    ['study3_records', 'ai_big_idea', 'TEXT'],
+    ['study3_records', 'ai_highlight_scene', 'TEXT'],
+    ['study3_records', 'ai_slogan', 'TEXT'],
+    ['study3_records', 'chat_log', 'TEXT'],
+    ['study3_records', 'open_text', 'TEXT'],
+    ['study3_records', 'collab_start_time', 'TEXT'],
+    ['study3_records', 'ai_done_time', 'TEXT'],
+    ['study3_records', 'rating_start_time', 'TEXT'],
+    ['study3_records', 'end_time', 'TEXT'],
+    ['study3_records', 'submitted_at', 'TEXT'],
   ];
   for (const [table, col, type] of migrations) {
     try {

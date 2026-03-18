@@ -269,6 +269,10 @@ study2SubjectRouter.post('/chat', async (req, res) => {
       }),
     });
     const data = await resp.json();
+    if (!resp.ok) {
+      console.error('[chat] Kimi API error:', resp.status, JSON.stringify(data));
+      return res.status(resp.status).json(data);
+    }
     res.json(data);
   } catch (e) {
     console.error(e);

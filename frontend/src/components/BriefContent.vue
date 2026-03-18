@@ -20,8 +20,8 @@ const props = defineProps({
 // 题目行 = 以"题目"开头的行（题目 / 题目 1 / 题目： 等）
 const TITLE_RE = /^题目/;
 // 四个小标题仅标题加粗：产品背景、创意素材、创意任务、创意目标
-const BOLD_SUBTITLE_PREFIXES = ['产品背景', '创意素材', '创意任务', '创意目标'];
-const SUBTITLE_KEYS = ['产品背景：', '创意素材：', '创意任务：', '创意目标：'];
+const BOLD_SUBTITLE_PREFIXES = ['产品背景', '创意素材', '创意任务', '创意目标', '产出要求', '模块1', '模块2', '模块3'];
+const SUBTITLE_KEYS = ['产品背景：', '创意素材：', '创意任务：', '创意目标：', '产出要求：', '模块1：', '模块2：', '模块3：'];
 function getBoldPrefix(trimmed) {
   for (const p of BOLD_SUBTITLE_PREFIXES) {
     if (trimmed.startsWith(p)) return p;

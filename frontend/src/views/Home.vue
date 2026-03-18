@@ -11,6 +11,9 @@
       <router-link to="/study2-process">研究二-被试版(过程组)</router-link>
       <router-link to="/study2-result">研究二-被试版(结果组)</router-link>
       <router-link to="/study2-admin">研究二-主试版</router-link>
+      <router-link to="/study3-process">研究三-被试版(过程组)</router-link>
+      <router-link to="/study3-result">研究三-被试版(结果组)</router-link>
+      <router-link to="/study3-admin">研究三-主试版</router-link>
     </nav>
   </div>
 </template>

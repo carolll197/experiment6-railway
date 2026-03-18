@@ -949,3 +949,207 @@ adminRouter.get('/export/study2-result-ai-plans', (req, res) => {
     res.send(buf);
   } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
 });
+
+// ======================== 研究三管理接口 ========================
+
+// 研究三 - 记录列表（支持 group_type 和 keyword 筛选）
+adminRouter.get('/study3/records', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT r.*, (SELECT s.name FROM study3_subjects s WHERE s.subject_id = r.subject_id LIMIT 1) AS display_name FROM study3_records r WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND r.group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) {
+      const k = `%${String(keyword).trim()}%`;
+      sql += ` AND (r.subject_id LIKE ? OR r.name LIKE ? OR r.assigned_plan_subject_id LIKE ? OR r.assigned_plan_name LIKE ?)`;
+      params.push(k, k, k, k);
+    }
+    sql += ` ORDER BY r.id`;
+    const rows = db.prepare(sql).all(...params);
+    res.json(Array.isArray(rows) ? rows : []);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究三 - 批量删除记录
+adminRouter.delete('/study3/records', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM study3_records WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究三 - CSE量表数据
+adminRouter.get('/study3/cse', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT c.*, COALESCE((SELECT s.name FROM study3_subjects s WHERE s.subject_id = c.subject_id LIMIT 1), '') AS display_name FROM study3_cse_scores c WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND c.group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) { sql += ` AND c.subject_id LIKE ?`; params.push(`%${String(keyword).trim()}%`); }
+    sql += ` ORDER BY c.id`;
+    const rows = db.prepare(sql).all(...params);
+    res.json(Array.isArray(rows) ? rows : []);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+adminRouter.delete('/study3/cse', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { ids } = req.body || {};
+    const idList = Array.isArray(ids) ? ids.filter((id) => Number(id) > 0).map(Number) : [];
+    if (idList.length === 0) return res.status(400).json({ error: '请提供 ids' });
+    const placeholders = idList.map(() => '?').join(',');
+    db.run(`DELETE FROM study3_cse_scores WHERE id IN (${placeholders})`, idList);
+    res.json({ ok: true, deleted: idList.length });
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究三 - 导出记录 Excel
+adminRouter.get('/export/study3-records', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT * FROM study3_records WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ? OR assigned_plan_subject_id LIKE ? OR assigned_plan_name LIKE ?)`; params.push(k, k, k, k); }
+    sql += ` ORDER BY id`;
+    const rows = db.prepare(sql).all(...params);
+    const ws = XLSX.utils.json_to_sheet(rows.map((r) => ({
+      被试编号: r.subject_id,
+      被试姓名: r.name,
+      组别: r.group_type === 'process' ? '过程组' : '结果组',
+      抽到的过程组被试编号: r.assigned_plan_subject_id || '',
+      抽到的过程组被试姓名: r.assigned_plan_name || '',
+      'AI方案-核心创意点': r.ai_big_idea || '',
+      'AI方案-高光画面': r.ai_highlight_scene || '',
+      'AI方案-主打广告语': r.ai_slogan || '',
+      '情绪1-轻松': r.emotion_1, '情绪2-满意': r.emotion_2, '情绪3-沮丧': r.emotion_3, '情绪4-失望': r.emotion_4, '情绪5-愤怒': r.emotion_5,
+      '期望落差1': r.gap_1, '期望落差2': r.gap_2,
+      '满意度1': r.satisfaction_1, '满意度2': r.satisfaction_2, '满意度3': r.satisfaction_3, '满意度4': r.satisfaction_4,
+      '所有权1': r.ownership_1, '所有权2': r.ownership_2, '所有权3': r.ownership_3, '所有权4': r.ownership_4,
+      '控制感1': r.control_1, '控制感2': r.control_2, '控制感3': r.control_3,
+      填空题: r.open_text || '',
+      开始协作时间: r.collab_start_time || '',
+      AI生成方案时间: r.ai_done_time || '',
+      开始作答量表时间: r.rating_start_time || '',
+      完成时间: r.end_time || '',
+      提交时间: r.submitted_at || '',
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '研究三记录');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study3_records.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+adminRouter.get('/export/study3-cse', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword, group_type } = req.query;
+    let sql = `SELECT c.*, COALESCE((SELECT s.name FROM study3_subjects s WHERE s.subject_id = c.subject_id LIMIT 1), '') AS display_name FROM study3_cse_scores c WHERE 1=1`;
+    const params = [];
+    if (group_type && String(group_type).trim()) { sql += ` AND c.group_type = ?`; params.push(String(group_type).trim()); }
+    if (keyword && String(keyword).trim()) { sql += ` AND c.subject_id LIKE ?`; params.push(`%${String(keyword).trim()}%`); }
+    sql += ` ORDER BY c.id`;
+    const rows = db.prepare(sql).all(...params);
+    const ws = XLSX.utils.json_to_sheet(rows.map((r) => ({
+      被试编号: r.subject_id,
+      被试姓名: r.display_name || '',
+      组别: r.group_type === 'process' ? '过程组' : '结果组',
+      题1: r.q1 ?? '', 题2: r.q2 ?? '', 题3: r.q3 ?? '', 题4: r.q4 ?? '',
+      提交时间: r.created_at || '',
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '研究三CSE');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study3_cse_scores.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究三 - 导出对话记录 Excel (过程组)
+adminRouter.get('/export/study3-chatlogs', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword } = req.query;
+    let sql = `SELECT subject_id, name, chat_log, ai_big_idea, ai_highlight_scene, ai_slogan FROM study3_records WHERE group_type = 'process'`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ?)`; params.push(k, k); }
+    sql += ` ORDER BY id`;
+    const rows = db.prepare(sql).all(...params);
+    const out = [];
+    for (const r of rows) {
+      let msgs = [];
+      try { msgs = JSON.parse(r.chat_log || '[]'); } catch (_) {}
+      const userMsgs = msgs.filter((m) => m.role === 'user');
+      const assistantNonFinal = msgs.filter((m) => m.role === 'assistant' && !m.isFinal);
+      const row = { 被试编号: r.subject_id, 被试姓名: r.name };
+      for (let i = 0; i < 5; i++) row[`第${i + 1}轮输入`] = userMsgs[i]?.content || '';
+      row['互动轮次'] = userMsgs.length;
+      row['用户输入字数'] = userMsgs.reduce((s, m) => s + String(m.content || '').length, 0);
+      row['AI提问次数'] = assistantNonFinal.length;
+      row['AI方案-核心创意点'] = r.ai_big_idea || '';
+      row['AI方案-高光画面'] = r.ai_highlight_scene || '';
+      row['AI方案-主打广告语'] = r.ai_slogan || '';
+      out.push(row);
+    }
+    const ws = XLSX.utils.json_to_sheet(out);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '过程组对话记录');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study3_chatlogs.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
+
+// 研究三 - 导出过程组完整对话记录 Excel（含完整对话全文一列）
+adminRouter.get('/export/study3-chatlogs-full', (req, res) => {
+  try {
+    const db = req.app.get('db');
+    const { keyword } = req.query;
+    let sql = `SELECT subject_id, name, chat_log, ai_big_idea, ai_highlight_scene, ai_slogan FROM study3_records WHERE group_type = 'process'`;
+    const params = [];
+    if (keyword && String(keyword).trim()) { const k = `%${String(keyword).trim()}%`; sql += ` AND (subject_id LIKE ? OR name LIKE ?)`; params.push(k, k); }
+    sql += ` ORDER BY id`;
+    const rows = db.prepare(sql).all(...params);
+    const out = [];
+    for (const r of rows) {
+      let msgs = [];
+      try { msgs = JSON.parse(r.chat_log || '[]'); } catch (_) {}
+      const fullLines = msgs.filter((m) => m.role !== 'system').map((m) => (m.role === 'user' ? '被试：' : 'AI：') + String(m.content || '').replace(/\n/g, '\n  '));
+      const fullChat = fullLines.join('\n');
+      const userMsgs = msgs.filter((m) => m.role === 'user');
+      const assistantNonFinal = msgs.filter((m) => m.role === 'assistant' && !m.isFinal);
+      out.push({
+        被试编号: r.subject_id,
+        被试姓名: r.name,
+        完整对话内容: fullChat,
+        互动轮次: userMsgs.length,
+        用户输入字数: userMsgs.reduce((s, m) => s + String(m.content || '').length, 0),
+        AI提问次数: assistantNonFinal.length,
+        'AI方案-核心创意点': r.ai_big_idea || '',
+        'AI方案-高光画面': r.ai_highlight_scene || '',
+        'AI方案-主打广告语': r.ai_slogan || '',
+      });
+    }
+    const ws = XLSX.utils.json_to_sheet(out);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '过程组完整对话');
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=study3_chatlogs_full.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+});
