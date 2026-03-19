@@ -36,6 +36,10 @@
                   </div>
                 </div>
                 <div v-if="aiLoading" class="ai-loading text-hint">AI 正在思考...</div>
+                <div v-else-if="showRetryGenerate" class="ai-retry-wrap">
+                  <div class="text-hint retry-hint">AI 生成方案失败或返回格式异常，请点击重新生成。</div>
+                  <button type="button" class="ai-send-btn-small retry-btn" :disabled="aiLoading" @click="retryGenerateFinalPlan">重新生成方案</button>
+                </div>
               </template>
             </div>
             <div class="ai-input-bar" v-if="chatStarted && !chatDone">
@@ -110,6 +114,7 @@ const aiGeneratedPlan = ref(init?.aiGeneratedPlan || null);
 const aiLoading = ref(false);
 const userInput = ref('');
 const chatBody = ref(null);
+const finalPlanError = ref(!!init?.finalPlanError);
 
 const systemMessage = ref({ role: 'system', content: kimiSystemPrompt });
 
@@ -150,6 +155,10 @@ function parseAiPlan(content) {
   return result;
 }
 
+function isValidAiPlan(plan) {
+  return !!(plan && String(plan.big_idea || '').trim() && String(plan.highlight_scene || '').trim() && String(plan.slogan || '').trim());
+}
+
 function buildApiMessages(extraUserMessage) {
   const system = { role: 'system', content: (systemMessage.value && systemMessage.value.content) || kimiSystemPrompt };
   const turns = chatMessages.value.filter((m) => m.role !== 'system').map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: String(m.content ?? '') }));
@@ -158,8 +167,11 @@ function buildApiMessages(extraUserMessage) {
   return list;
 }
 
+const showRetryGenerate = computed(() => chatStarted.value && !chatDone.value && !aiLoading.value && finalPlanError.value && !isValidAiPlan(aiGeneratedPlan.value));
+
 async function requestFinalPlan(trigger) {
   if (chatDone.value) return;
+  finalPlanError.value = false;
   const finalPrompt = trigger === 'timer'
     ? '8分钟讨论已结束。请根据上述对话内容直接输出最终方案，仅输出以下规范格式：\n模块1：核心创意与设定\n（内容）\n模块2：高光画面描述\n（内容）\n模块3：主打广告语\n（内容）'
     : '信息已收集完毕。请根据上述对话内容直接输出最终方案，仅输出以下规范格式：\n模块1：核心创意与设定\n（内容）\n模块2：高光画面描述\n（内容）\n模块3：主打广告语\n（内容）';
@@ -175,22 +187,34 @@ async function requestFinalPlan(trigger) {
     if (!resp.ok || data.error) {
       const errMsg = data.error?.message || data.error || `请求失败（${resp.status}）`;
       chatMessages.value.push({ role: 'assistant', content: `AI 生成方案出错：${errMsg}`, isFinal: false });
+      finalPlanError.value = true;
     } else {
       const aiContent = data.choices?.[0]?.message?.content || data.content || '';
       const parsed = parseAiPlan(aiContent);
-      const displayText = [parsed.big_idea && `模块1：核心创意与设定\n${parsed.big_idea}`, parsed.highlight_scene && `模块2：高光画面描述\n${parsed.highlight_scene}`, parsed.slogan && `模块3：主打广告语\n${parsed.slogan}`].filter(Boolean).join('\n\n') || aiContent;
-      chatMessages.value.push({ role: 'assistant', content: displayText, isFinal: true });
-      aiGeneratedPlan.value = parsed;
-      chatDone.value = true;
-      aiDoneTime.value = new Date().toISOString();
-      if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
+      if (!isValidAiPlan(parsed)) {
+        chatMessages.value.push({ role: 'assistant', content: 'AI 返回的方案格式不完整（缺少模块1/2/3）。请点击下方“重新生成方案”。', isFinal: false });
+        finalPlanError.value = true;
+      } else {
+        const displayText = [`模块1：核心创意与设定\n${parsed.big_idea}`, `模块2：高光画面描述\n${parsed.highlight_scene}`, `模块3：主打广告语\n${parsed.slogan}`].join('\n\n');
+        chatMessages.value.push({ role: 'assistant', content: displayText, isFinal: true });
+        aiGeneratedPlan.value = parsed;
+        chatDone.value = true;
+        aiDoneTime.value = new Date().toISOString();
+        if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
+      }
     }
   } catch (e) {
     chatMessages.value.push({ role: 'assistant', content: 'AI 生成方案失败，请稍后重试。', isFinal: false });
+    finalPlanError.value = true;
   }
   aiLoading.value = false;
   scrollChatBottom();
   emitSave();
+}
+
+function retryGenerateFinalPlan() {
+  if (aiLoading.value || chatDone.value) return;
+  requestFinalPlan('retry');
 }
 
 function startCollaboration() {
@@ -296,6 +320,7 @@ function emitSave() {
     chatMessages: chatMessages.value,
     chatDone: chatDone.value,
     aiGeneratedPlan: aiGeneratedPlan.value,
+    finalPlanError: finalPlanError.value,
     scores: scores.value,
     openText: openText.value,
     collabStartTime: collabStartTime.value,
@@ -377,6 +402,9 @@ onUnmounted(() => { if (chatTimer) clearInterval(chatTimer); });
 .ai-msg-ai-wrap { margin-bottom: 8px; }
 .ai-msg-ai { background: #fff; border-radius: 8px; padding: 10px 12px; border: 1px solid #eee; font-family: "SimSun", "Songti SC", serif; }
 .ai-loading { padding: 8px; color: #999; font-style: italic; }
+.ai-retry-wrap { padding: 10px 0 6px 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.retry-hint { text-align: center; }
+.retry-btn { padding: 6px 18px; }
 .ai-done-tip { margin: 8px 0; text-align: center; }
 .ai-input-bar { display: flex; gap: 8px; padding: 10px 15px; border-top: 1px solid #e8e8e8; flex-shrink: 0; align-items: flex-end; }
 .ai-input-textarea { flex: 1; min-height: 4.5em; max-height: 120px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; resize: none; overflow-y: auto; line-height: 1.4; font-family: inherit; }
