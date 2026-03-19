@@ -256,24 +256,50 @@ study2SubjectRouter.post('/chat', async (req, res) => {
       return res.status(400).json({ error: '缺少 messages' });
     }
     const freshMessages = JSON.parse(JSON.stringify(messages));
-    const resp = await fetch('https://api.moonshot.cn/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer sk-AOLeSbacJoud5KTCvpKVhmsNCiVOwYXMuIQE3NCbuTmBm0Js',
-      },
-      body: JSON.stringify({
-        model: 'kimi-k2-0905-preview',
-        messages: freshMessages,
-        temperature: 0.8,
-      }),
-    });
-    const data = await resp.json();
-    if (!resp.ok) {
-      console.error('[chat] Kimi API error:', resp.status, JSON.stringify(data));
-      return res.status(resp.status).json(data);
+    const bearer =
+      process.env.MOONSHOT_API_KEY ||
+      process.env.MOONSHOT_KEY ||
+      'sk-AOLeSbacJoud5KTCvpKVhmsNCiVOwYXMuIQE3NCbuTmBm0Js';
+
+    const modelFallback = ['kimi-k2-0905-preview', 'moonshot-v1-32k', 'moonshot-v1-8k'];
+
+    let lastStatus = 500;
+    let lastData = null;
+
+    for (const model of modelFallback) {
+      const resp = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${bearer}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: freshMessages,
+          temperature: 0.8,
+        }),
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok) return res.json(data);
+
+      lastStatus = resp.status;
+      lastData = data;
+      const errType = data?.error?.type;
+      const retriable =
+        resp.status === 429 ||
+        resp.status >= 500 ||
+        errType === 'engine_overloaded_error' ||
+        errType === 'rate_limit_error';
+
+      if (!retriable) {
+        console.error('[chat] Moonshot API error:', resp.status, JSON.stringify(data));
+        return res.status(resp.status).json(data);
+      }
     }
-    res.json(data);
+
+    console.error('[chat] Moonshot API error (fallback exhausted):', lastStatus, JSON.stringify(lastData));
+    return res.status(lastStatus).json(lastData || { error: { message: 'Moonshot API error' } });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
