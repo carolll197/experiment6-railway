@@ -170,7 +170,7 @@ function buildApiMessages(extraUserMessage) {
 const showRetryGenerate = computed(() => chatStarted.value && !chatDone.value && !aiLoading.value && finalPlanError.value && !isValidAiPlan(aiGeneratedPlan.value));
 
 async function requestFinalPlan(trigger) {
-  if (chatDone.value) return;
+  if (chatDone.value || aiLoading.value) return;
   finalPlanError.value = false;
   const finalPrompt = trigger === 'timer'
     ? '8分钟讨论已结束。请根据上述对话内容直接输出最终方案，仅输出以下规范格式：\n模块1：核心创意与设定\n（内容）\n模块2：高光画面描述\n（内容）\n模块3：主打广告语\n（内容）'
@@ -227,7 +227,7 @@ function startCollaboration() {
     if (chatTimerRemaining.value <= 0) {
       clearInterval(chatTimer);
       chatTimer = null;
-      requestFinalPlan('timer');
+      if (!chatDone.value && !aiLoading.value) requestFinalPlan('timer');
     }
   }, 1000);
   const firstPrompt = '请根据系统提示开始对话，先输出你的开场白（询问场景与角色），仅输出该段话，不要输出最终方案。';
@@ -373,7 +373,7 @@ onMounted(() => {
   if (chatStarted.value && !chatDone.value && chatTimerRemaining.value > 0 && !chatTimer) {
     chatTimer = setInterval(() => {
       chatTimerRemaining.value--;
-      if (chatTimerRemaining.value <= 0) { clearInterval(chatTimer); chatTimer = null; requestFinalPlan('timer'); }
+      if (chatTimerRemaining.value <= 0) { clearInterval(chatTimer); chatTimer = null; if (!chatDone.value && !aiLoading.value) requestFinalPlan('timer'); }
     }, 1000);
   }
 });
